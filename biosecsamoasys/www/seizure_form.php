@@ -29,6 +29,11 @@
         </div>
     </div>
 
+    <!-- New Record Banner -->
+    <div style="padding: 12px; background: #e3f2fd; border-left: 4px solid #2196f3; margin-bottom: 20px; border-radius: 5px;">
+        <strong>📝 New Seizure Record</strong> - This form creates a NEW seizure record for the selected voyage. Existing seizure records are shown in the "Recent Passenger Seizures" section below.
+    </div>
+
     <!-- Seizure Details -->
     <div class="form-section">
         <h2>📋 Seizure Details</h2>

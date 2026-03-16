@@ -35,6 +35,11 @@
         <input type="hidden" id="csrf_token" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
         <input type="hidden" id="cs_CargoSeizureVoyageIDHidden" name="VoyageID">
 
+        <!-- New Record Banner -->
+        <div style="padding: 12px; background: #e3f2fd; border-left: 4px solid #2196f3; margin-bottom: 20px; border-radius: 5px;">
+            <strong>📝 New Cargo Seizure Record</strong> - This form creates a NEW cargo seizure record. Existing records are shown in "Recent Cargo Seizures" below.
+        </div>
+
         <!-- Seizure Details Section -->
         <div class="form-section">
             <h2 style="color: #c0392b;">📋 Seizure Details</h2>

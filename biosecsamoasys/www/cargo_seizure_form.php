@@ -89,7 +89,8 @@
                 </div>
                 <div class="form-group">
                     <label for="SeizureNo">Seizure No.</label>
-                    <input type="text" id="SeizureNo" name="SeizureNo">
+                    <input type="text" id="SeizureNo" name="SeizureNo" readonly style="background: #e8f5e9; font-weight: bold;" placeholder="Auto-generated">
+                    <small style="color: #666;">Automatically generated</small>
                 </div>
             </div>
             <div class="form-row form-row-2">

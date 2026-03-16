@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPortsForCargoSeizure();
     loadCommoditiesForCargoSeizure();
     loadRecentCargoSeizures();
+    loadAutoCargoSeizureNumber();
 
     // Check active voyage after voyages are loaded
     voyagesLoadingCargoSeizure.then(() => {
@@ -29,6 +30,19 @@ document.addEventListener('DOMContentLoaded', function() {
         seizureDateField.value = today;
     }
 });
+
+// Load auto-generated cargo seizure number
+async function loadAutoCargoSeizureNumber() {
+    try {
+        const response = await fetch('api/generate_seizure_number.php?type=cargo');
+        const data = await response.json();
+        if (data.success && data.seizure_no) {
+            document.getElementById('SeizureNo').value = data.seizure_no;
+        }
+    } catch (error) {
+        console.error('Error loading cargo seizure number:', error);
+    }
+}
 
 // Check for active voyage in localStorage
 function checkActiveVoyageCargoSeizure() {
@@ -280,6 +294,9 @@ if (cargoSeizureForm) {
                     const today = new Date().toISOString().split('T')[0];
                     seizureDateField.value = today;
                 }
+
+                // Reload new cargo seizure number for next record
+                loadAutoCargoSeizureNumber();
 
                 // Reload recent cargo seizures
                 loadRecentCargoSeizures();

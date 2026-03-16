@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPortsForSeizure();
     loadCommoditiesForSeizure();
     loadRecentSeizures();
+    loadAutoSeizureNumber();
 
     // Check active voyage after voyages are loaded
     voyagesLoadingSeizure.then(() => {
@@ -29,6 +30,19 @@ document.addEventListener('DOMContentLoaded', function() {
         seizureDateField.value = today;
     }
 });
+
+// Load auto-generated seizure number
+async function loadAutoSeizureNumber() {
+    try {
+        const response = await fetch('api/generate_seizure_number.php?type=passenger');
+        const data = await response.json();
+        if (data.success && data.seizure_no) {
+            document.getElementById('ps_SeizureNo').value = data.seizure_no;
+        }
+    } catch (error) {
+        console.error('Error loading seizure number:', error);
+    }
+}
 
 // Check for active voyage in localStorage
 function checkActiveVoyageSeizure() {
@@ -255,6 +269,9 @@ if (seizureForm) {
                     const today = new Date().toISOString().split('T')[0];
                     seizureDateField.value = today;
                 }
+
+                // Reload new seizure number for next record
+                loadAutoSeizureNumber();
 
                 // Reload recent seizures
                 loadRecentSeizures();

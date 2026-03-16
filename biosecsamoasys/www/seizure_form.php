@@ -39,7 +39,8 @@
             </div>
             <div class="form-group">
                 <label for="ps_SeizureNo">Seizure No</label>
-                <input type="text" id="ps_SeizureNo" name="SeizureNo" placeholder="e.g., SZ2025-001">
+                <input type="text" id="ps_SeizureNo" name="SeizureNo" readonly style="background: #e8f5e9; font-weight: bold;" placeholder="Auto-generated">
+                <small style="color: #666;">Automatically generated on form load</small>
             </div>
             <div class="form-group">
                 <label for="ps_Importer">Importer</label>

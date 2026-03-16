@@ -2,8 +2,9 @@
 let releaseItemCounter = 0;
 
 // Load data when the cargo release tab is accessed
-document.addEventListener('DOMContentLoaded', function() {
-    loadVoyagesForRelease();
+document.addEventListener('DOMContentLoaded', async function() {
+    // Load voyages first, then check for active voyage
+    await loadVoyagesForRelease();
     loadCommoditiesForRelease();
     loadRecentReleases();
     checkActiveVoyageRelease();
@@ -33,16 +34,14 @@ function checkActiveVoyageRelease() {
         document.getElementById('voyageSelectionSectionRelease').style.display = 'none';
 
         // Set the voyage ID in the select and hidden field
-        setTimeout(() => {
-            const voyageSelect = document.getElementById('ReleaseVoyageID');
-            const voyageHidden = document.getElementById('ReleaseVoyageIDHidden');
-            if (voyageSelect) {
-                voyageSelect.value = activeVoyageID;
-            }
-            if (voyageHidden) {
-                voyageHidden.value = activeVoyageID;
-            }
-        }, 500);
+        const voyageSelect = document.getElementById('ReleaseVoyageID');
+        const voyageHidden = document.getElementById('ReleaseVoyageIDHidden');
+        if (voyageSelect) {
+            voyageSelect.value = activeVoyageID;
+        }
+        if (voyageHidden) {
+            voyageHidden.value = activeVoyageID;
+        }
     } else {
         // Show voyage selection section
         document.getElementById('activeVoyageContextRelease').style.display = 'none';
@@ -59,39 +58,41 @@ function clearActiveVoyageRelease() {
 }
 
 // Load voyages for dropdown
-function loadVoyagesForRelease() {
-    fetch('api/get_voyages.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.data) {
-                const voyageSelect = document.getElementById('ReleaseVoyageID');
-                if (voyageSelect) {
-                    voyageSelect.innerHTML = '<option value="">Select Voyage...</option>';
+async function loadVoyagesForRelease() {
+    try {
+        const response = await fetch('api/get_voyages.php');
+        const data = await response.json();
 
-                    data.data.forEach(voyage => {
-                        const option = document.createElement('option');
-                        option.value = voyage.VoyageID;
-                        option.textContent = `${voyage.VoyageNo} - ${voyage.VesselID} (${voyage.ArrivalDate})`;
-                        voyageSelect.appendChild(option);
-                    });
+        if (data.success && data.data) {
+            const voyageSelect = document.getElementById('ReleaseVoyageID');
+            if (voyageSelect) {
+                voyageSelect.innerHTML = '<option value="">Select Voyage...</option>';
 
-                    // Auto-select active voyage if exists
-                    const activeVoyageID = localStorage.getItem('activeVoyageID');
-                    if (activeVoyageID) {
-                        voyageSelect.value = activeVoyageID;
-                    }
+                data.data.forEach(voyage => {
+                    const option = document.createElement('option');
+                    option.value = voyage.VoyageID;
+                    option.textContent = `${voyage.VoyageNo} - ${voyage.VesselID} (${voyage.ArrivalDate})`;
+                    voyageSelect.appendChild(option);
+                });
 
-                    // Update hidden field when selection changes
-                    voyageSelect.addEventListener('change', function() {
-                        const voyageHidden = document.getElementById('ReleaseVoyageIDHidden');
-                        if (voyageHidden) {
-                            voyageHidden.value = this.value;
-                        }
-                    });
+                // Auto-select active voyage if exists
+                const activeVoyageID = localStorage.getItem('activeVoyageID');
+                if (activeVoyageID) {
+                    voyageSelect.value = activeVoyageID;
                 }
+
+                // Update hidden field when selection changes
+                voyageSelect.addEventListener('change', function() {
+                    const voyageHidden = document.getElementById('ReleaseVoyageIDHidden');
+                    if (voyageHidden) {
+                        voyageHidden.value = this.value;
+                    }
+                });
             }
-        })
-        .catch(error => console.error('Error loading voyages:', error));
+        }
+    } catch (error) {
+        console.error('Error loading voyages:', error);
+    }
 }
 
 // Load commodities for dropdown

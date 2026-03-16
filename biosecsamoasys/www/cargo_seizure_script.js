@@ -1,6 +1,7 @@
 // Load data when the cargo seizure tab is accessed
-document.addEventListener('DOMContentLoaded', function() {
-    loadVoyagesForCargoSeizure();
+document.addEventListener('DOMContentLoaded', async function() {
+    // Load voyages first, then check for active voyage
+    await loadVoyagesForCargoSeizure();
     loadPortsForCargoSeizure();
     loadCommoditiesForCargoSeizure();
     loadRecentCargoSeizures();
@@ -37,16 +38,14 @@ function checkActiveVoyageCargoSeizure() {
         document.getElementById('cs_voyageSelectionSection').style.display = 'none';
 
         // Set the voyage ID in the select and hidden field
-        setTimeout(() => {
-            const voyageSelect = document.getElementById('cs_CargoSeizureVoyageID');
-            const voyageHidden = document.getElementById('cs_CargoSeizureVoyageIDHidden');
-            if (voyageSelect) {
-                voyageSelect.value = activeVoyageID;
-            }
-            if (voyageHidden) {
-                voyageHidden.value = activeVoyageID;
-            }
-        }, 500);
+        const voyageSelect = document.getElementById('cs_CargoSeizureVoyageID');
+        const voyageHidden = document.getElementById('cs_CargoSeizureVoyageIDHidden');
+        if (voyageSelect) {
+            voyageSelect.value = activeVoyageID;
+        }
+        if (voyageHidden) {
+            voyageHidden.value = activeVoyageID;
+        }
     } else {
         // Show voyage selection section
         document.getElementById('activeVoyageContextCargoSeizure').style.display = 'none';
@@ -63,39 +62,41 @@ function clearActiveVoyageCargoSeizure() {
 }
 
 // Load voyages for dropdown
-function loadVoyagesForCargoSeizure() {
-    fetch('api/get_voyages.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.data) {
-                const voyageSelect = document.getElementById('cs_CargoSeizureVoyageID');
-                if (voyageSelect) {
-                    voyageSelect.innerHTML = '<option value="">Select Voyage...</option>';
+async function loadVoyagesForCargoSeizure() {
+    try {
+        const response = await fetch('api/get_voyages.php');
+        const data = await response.json();
 
-                    data.data.forEach(voyage => {
-                        const option = document.createElement('option');
-                        option.value = voyage.VoyageID;
-                        option.textContent = `${voyage.VoyageNo} - ${voyage.VesselID} (${voyage.ArrivalDate})`;
-                        voyageSelect.appendChild(option);
-                    });
+        if (data.success && data.data) {
+            const voyageSelect = document.getElementById('cs_CargoSeizureVoyageID');
+            if (voyageSelect) {
+                voyageSelect.innerHTML = '<option value="">Select Voyage...</option>';
 
-                    // Auto-select active voyage if exists
-                    const activeVoyageID = localStorage.getItem('activeVoyageID');
-                    if (activeVoyageID) {
-                        voyageSelect.value = activeVoyageID;
-                    }
+                data.data.forEach(voyage => {
+                    const option = document.createElement('option');
+                    option.value = voyage.VoyageID;
+                    option.textContent = `${voyage.VoyageNo} - ${voyage.VesselID} (${voyage.ArrivalDate})`;
+                    voyageSelect.appendChild(option);
+                });
 
-                    // Update hidden field when selection changes
-                    voyageSelect.addEventListener('change', function() {
-                        const voyageHidden = document.getElementById('cs_CargoSeizureVoyageIDHidden');
-                        if (voyageHidden) {
-                            voyageHidden.value = this.value;
-                        }
-                    });
+                // Auto-select active voyage if exists
+                const activeVoyageID = localStorage.getItem('activeVoyageID');
+                if (activeVoyageID) {
+                    voyageSelect.value = activeVoyageID;
                 }
+
+                // Update hidden field when selection changes
+                voyageSelect.addEventListener('change', function() {
+                    const voyageHidden = document.getElementById('cs_CargoSeizureVoyageIDHidden');
+                    if (voyageHidden) {
+                        voyageHidden.value = this.value;
+                    }
+                });
             }
-        })
-        .catch(error => console.error('Error loading voyages:', error));
+        }
+    } catch (error) {
+        console.error('Error loading voyages:', error);
+    }
 }
 
 // Load ports for dropdown

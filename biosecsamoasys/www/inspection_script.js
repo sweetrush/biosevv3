@@ -1,17 +1,18 @@
 // Load data when the inspection tab is accessed
-document.addEventListener('DOMContentLoaded', function() {
-    loadVoyages();
-    loadCommodities();
-    loadLocations();
-    loadRecentInspections();
-    checkActiveVoyage();
-
+document.addEventListener('DOMContentLoaded', async function() {
     // Set today's date for modified date
     const modifiedDateField = document.getElementById('InspectionModifiedDate');
     if (modifiedDateField) {
         const today = new Date().toISOString().split('T')[0];
         modifiedDateField.value = today;
     }
+
+    // Load voyages first, then check for active voyage
+    await loadVoyages();
+    loadCommodities();
+    loadLocations();
+    loadRecentInspections();
+    checkActiveVoyage();
 
     // Add event listeners for compliance calculation
     const consignmentsField = document.getElementById('NoOfConsignments');
@@ -45,13 +46,11 @@ function checkActiveVoyage() {
         // Hide the voyage selection dropdown section
         document.getElementById('voyageSelectionSection').style.display = 'none';
 
-        // Set the voyage ID in the hidden field (we'll need to ensure the select has this value)
-        setTimeout(() => {
-            const voyageSelect = document.getElementById('InspectionVoyageID');
-            if (voyageSelect) {
-                voyageSelect.value = activeVoyageID;
-            }
-        }, 500);
+        // Set the voyage ID in the select dropdown
+        const voyageSelect = document.getElementById('InspectionVoyageID');
+        if (voyageSelect) {
+            voyageSelect.value = activeVoyageID;
+        }
     } else {
         // Show voyage selection section
         document.getElementById('activeVoyageContext').style.display = 'none';
@@ -68,31 +67,33 @@ function clearActiveVoyage() {
 }
 
 // Load voyages for dropdown
-function loadVoyages() {
-    fetch('api/get_voyages.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.data) {
-                const voyageSelect = document.getElementById('InspectionVoyageID');
-                if (voyageSelect) {
-                    voyageSelect.innerHTML = '<option value="">Select Voyage...</option>';
+async function loadVoyages() {
+    try {
+        const response = await fetch('api/get_voyages.php');
+        const data = await response.json();
 
-                    data.data.forEach(voyage => {
-                        const option = document.createElement('option');
-                        option.value = voyage.VoyageID;
-                        option.textContent = `${voyage.VoyageNo} - ${voyage.VesselID} (${voyage.ArrivalDate})`;
-                        voyageSelect.appendChild(option);
-                    });
+        if (data.success && data.data) {
+            const voyageSelect = document.getElementById('InspectionVoyageID');
+            if (voyageSelect) {
+                voyageSelect.innerHTML = '<option value="">Select Voyage...</option>';
 
-                    // Auto-select active voyage if exists
-                    const activeVoyageID = localStorage.getItem('activeVoyageID');
-                    if (activeVoyageID) {
-                        voyageSelect.value = activeVoyageID;
-                    }
+                data.data.forEach(voyage => {
+                    const option = document.createElement('option');
+                    option.value = voyage.VoyageID;
+                    option.textContent = `${voyage.VoyageNo} - ${voyage.VesselID} (${voyage.ArrivalDate})`;
+                    voyageSelect.appendChild(option);
+                });
+
+                // Auto-select active voyage if exists
+                const activeVoyageID = localStorage.getItem('activeVoyageID');
+                if (activeVoyageID) {
+                    voyageSelect.value = activeVoyageID;
                 }
             }
-        })
-        .catch(error => console.error('Error loading voyages:', error));
+        }
+    } catch (error) {
+        console.error('Error loading voyages:', error);
+    }
 }
 
 // Load commodity types for dropdown

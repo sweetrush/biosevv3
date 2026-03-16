@@ -1,6 +1,7 @@
 // Load data when the seizure tab is accessed
-document.addEventListener('DOMContentLoaded', function() {
-    loadVoyagesForSeizure();
+document.addEventListener('DOMContentLoaded', async function() {
+    // Load voyages first, then check for active voyage
+    await loadVoyagesForSeizure();
     loadPortsForSeizure();
     loadCommoditiesForSeizure();
     loadRecentSeizures();
@@ -36,13 +37,11 @@ function checkActiveVoyageSeizure() {
         // Hide the voyage selection dropdown section
         document.getElementById('ps_voyageSelectionSection').style.display = 'none';
 
-        // Set the voyage ID in the select
-        setTimeout(() => {
-            const voyageSelect = document.getElementById('ps_SeizureVoyageID');
-            if (voyageSelect) {
-                voyageSelect.value = activeVoyageID;
-            }
-        }, 500);
+        // Set the voyage ID in the select dropdown
+        const voyageSelect = document.getElementById('ps_SeizureVoyageID');
+        if (voyageSelect) {
+            voyageSelect.value = activeVoyageID;
+        }
     } else {
         // Show voyage selection section
         document.getElementById('activeVoyageContextSeizure').style.display = 'none';
@@ -59,31 +58,33 @@ function clearActiveVoyageSeizure() {
 }
 
 // Load voyages for dropdown
-function loadVoyagesForSeizure() {
-    fetch('api/get_voyages.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.data) {
-                const voyageSelect = document.getElementById('ps_SeizureVoyageID');
-                if (voyageSelect) {
-                    voyageSelect.innerHTML = '<option value="">Select Voyage...</option>';
+async function loadVoyagesForSeizure() {
+    try {
+        const response = await fetch('api/get_voyages.php');
+        const data = await response.json();
 
-                    data.data.forEach(voyage => {
-                        const option = document.createElement('option');
-                        option.value = voyage.VoyageID;
-                        option.textContent = `${voyage.VoyageNo} - ${voyage.VesselID} (${voyage.ArrivalDate})`;
-                        voyageSelect.appendChild(option);
-                    });
+        if (data.success && data.data) {
+            const voyageSelect = document.getElementById('ps_SeizureVoyageID');
+            if (voyageSelect) {
+                voyageSelect.innerHTML = '<option value="">Select Voyage...</option>';
 
-                    // Auto-select active voyage if exists
-                    const activeVoyageID = localStorage.getItem('activeVoyageID');
-                    if (activeVoyageID) {
-                        voyageSelect.value = activeVoyageID;
-                    }
+                data.data.forEach(voyage => {
+                    const option = document.createElement('option');
+                    option.value = voyage.VoyageID;
+                    option.textContent = `${voyage.VoyageNo} - ${voyage.VesselID} (${voyage.ArrivalDate})`;
+                    voyageSelect.appendChild(option);
+                });
+
+                // Auto-select active voyage if exists
+                const activeVoyageID = localStorage.getItem('activeVoyageID');
+                if (activeVoyageID) {
+                    voyageSelect.value = activeVoyageID;
                 }
             }
-        })
-        .catch(error => console.error('Error loading voyages:', error));
+        }
+    } catch (error) {
+        console.error('Error loading voyages:', error);
+    }
 }
 
 // Load ports for dropdown

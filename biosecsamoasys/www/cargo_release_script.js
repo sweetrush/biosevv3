@@ -1,13 +1,22 @@
 // Global counter for release items
 let releaseItemCounter = 0;
 
+// Track voyage loading state
+let voyagesLoadedRelease = false;
+let voyagesLoadingRelease = null;
+
 // Load data when the cargo release tab is accessed
-document.addEventListener('DOMContentLoaded', async function() {
-    // Load voyages first, then check for active voyage
-    await loadVoyagesForRelease();
+document.addEventListener('DOMContentLoaded', function() {
+    // Start loading voyages and store the promise
+    voyagesLoadingRelease = loadVoyagesForRelease();
+
     loadCommoditiesForRelease();
     loadRecentReleases();
-    checkActiveVoyageRelease();
+
+    // Check active voyage after voyages are loaded
+    voyagesLoadingRelease.then(() => {
+        checkActiveVoyageRelease();
+    });
 
     // Set today's date for release date
     const releaseDateField = document.getElementById('ReleaseDate');
@@ -33,14 +42,17 @@ function checkActiveVoyageRelease() {
         // Hide the voyage selection dropdown section
         document.getElementById('voyageSelectionSectionRelease').style.display = 'none';
 
-        // Set the voyage ID in the select and hidden field
+        // Set the voyage ID in the select and hidden field (wait for voyages to load if needed)
         const voyageSelect = document.getElementById('ReleaseVoyageID');
         const voyageHidden = document.getElementById('ReleaseVoyageIDHidden');
-        if (voyageSelect) {
-            voyageSelect.value = activeVoyageID;
-        }
-        if (voyageHidden) {
-            voyageHidden.value = activeVoyageID;
+        if (voyagesLoadedRelease) {
+            if (voyageSelect) voyageSelect.value = activeVoyageID;
+            if (voyageHidden) voyageHidden.value = activeVoyageID;
+        } else if (voyagesLoadingRelease) {
+            voyagesLoadingRelease.then(() => {
+                if (voyageSelect) voyageSelect.value = activeVoyageID;
+                if (voyageHidden) voyageHidden.value = activeVoyageID;
+            });
         }
     } else {
         // Show voyage selection section
@@ -88,6 +100,7 @@ async function loadVoyagesForRelease() {
                         voyageHidden.value = this.value;
                     }
                 });
+                voyagesLoadedRelease = true;
             }
         }
     } catch (error) {

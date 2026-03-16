@@ -1,11 +1,20 @@
+// Track voyage loading state
+let voyagesLoadedCargoSeizure = false;
+let voyagesLoadingCargoSeizure = null;
+
 // Load data when the cargo seizure tab is accessed
-document.addEventListener('DOMContentLoaded', async function() {
-    // Load voyages first, then check for active voyage
-    await loadVoyagesForCargoSeizure();
+document.addEventListener('DOMContentLoaded', function() {
+    // Start loading voyages and store the promise
+    voyagesLoadingCargoSeizure = loadVoyagesForCargoSeizure();
+
     loadPortsForCargoSeizure();
     loadCommoditiesForCargoSeizure();
     loadRecentCargoSeizures();
-    checkActiveVoyageCargoSeizure();
+
+    // Check active voyage after voyages are loaded
+    voyagesLoadingCargoSeizure.then(() => {
+        checkActiveVoyageCargoSeizure();
+    });
 
     // Add event listener for clear voyage button
     const clearBtn = document.getElementById('clearVoyageBtnCargoSeizure');
@@ -37,14 +46,17 @@ function checkActiveVoyageCargoSeizure() {
         // Hide the voyage selection dropdown section
         document.getElementById('cs_voyageSelectionSection').style.display = 'none';
 
-        // Set the voyage ID in the select and hidden field
+        // Set the voyage ID in the select and hidden field (wait for voyages to load if needed)
         const voyageSelect = document.getElementById('cs_CargoSeizureVoyageID');
         const voyageHidden = document.getElementById('cs_CargoSeizureVoyageIDHidden');
-        if (voyageSelect) {
-            voyageSelect.value = activeVoyageID;
-        }
-        if (voyageHidden) {
-            voyageHidden.value = activeVoyageID;
+        if (voyagesLoadedCargoSeizure) {
+            if (voyageSelect) voyageSelect.value = activeVoyageID;
+            if (voyageHidden) voyageHidden.value = activeVoyageID;
+        } else if (voyagesLoadingCargoSeizure) {
+            voyagesLoadingCargoSeizure.then(() => {
+                if (voyageSelect) voyageSelect.value = activeVoyageID;
+                if (voyageHidden) voyageHidden.value = activeVoyageID;
+            });
         }
     } else {
         // Show voyage selection section
@@ -92,6 +104,7 @@ async function loadVoyagesForCargoSeizure() {
                         voyageHidden.value = this.value;
                     }
                 });
+                voyagesLoadedCargoSeizure = true;
             }
         }
     } catch (error) {

@@ -1,5 +1,9 @@
+// Track voyage loading state
+let voyagesLoaded = false;
+let voyagesLoading = null;
+
 // Load data when the inspection tab is accessed
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Set today's date for modified date
     const modifiedDateField = document.getElementById('InspectionModifiedDate');
     if (modifiedDateField) {
@@ -7,12 +11,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         modifiedDateField.value = today;
     }
 
-    // Load voyages first, then check for active voyage
-    await loadVoyages();
+    // Start loading voyages and store the promise
+    voyagesLoading = loadVoyages();
+
     loadCommodities();
     loadLocations();
     loadRecentInspections();
-    checkActiveVoyage();
+
+    // Check active voyage after voyages are loaded
+    voyagesLoading.then(() => {
+        checkActiveVoyage();
+    });
 
     // Add event listeners for compliance calculation
     const consignmentsField = document.getElementById('NoOfConsignments');
@@ -46,10 +55,16 @@ function checkActiveVoyage() {
         // Hide the voyage selection dropdown section
         document.getElementById('voyageSelectionSection').style.display = 'none';
 
-        // Set the voyage ID in the select dropdown
+        // Set the voyage ID in the select dropdown (wait for voyages to load if needed)
         const voyageSelect = document.getElementById('InspectionVoyageID');
         if (voyageSelect) {
-            voyageSelect.value = activeVoyageID;
+            if (voyagesLoaded) {
+                voyageSelect.value = activeVoyageID;
+            } else if (voyagesLoading) {
+                voyagesLoading.then(() => {
+                    voyageSelect.value = activeVoyageID;
+                });
+            }
         }
     } else {
         // Show voyage selection section
@@ -71,6 +86,7 @@ async function loadVoyages() {
     try {
         const response = await fetch('api/get_voyages.php');
         const data = await response.json();
+        console.log('Inspection: Loaded voyages:', data);
 
         if (data.success && data.data) {
             const voyageSelect = document.getElementById('InspectionVoyageID');
@@ -86,9 +102,12 @@ async function loadVoyages() {
 
                 // Auto-select active voyage if exists
                 const activeVoyageID = localStorage.getItem('activeVoyageID');
+                console.log('Inspection: Active voyage from localStorage:', activeVoyageID);
                 if (activeVoyageID) {
                     voyageSelect.value = activeVoyageID;
+                    console.log('Inspection: Set dropdown to:', voyageSelect.value);
                 }
+                voyagesLoaded = true;
             }
         }
     } catch (error) {

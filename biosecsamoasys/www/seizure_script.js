@@ -1,11 +1,20 @@
+// Track voyage loading state
+let voyagesLoadedSeizure = false;
+let voyagesLoadingSeizure = null;
+
 // Load data when the seizure tab is accessed
-document.addEventListener('DOMContentLoaded', async function() {
-    // Load voyages first, then check for active voyage
-    await loadVoyagesForSeizure();
+document.addEventListener('DOMContentLoaded', function() {
+    // Start loading voyages and store the promise
+    voyagesLoadingSeizure = loadVoyagesForSeizure();
+
     loadPortsForSeizure();
     loadCommoditiesForSeizure();
     loadRecentSeizures();
-    checkActiveVoyageSeizure();
+
+    // Check active voyage after voyages are loaded
+    voyagesLoadingSeizure.then(() => {
+        checkActiveVoyageSeizure();
+    });
 
     // Add event listener for clear voyage button
     const clearBtn = document.getElementById('clearVoyageBtnSeizure');
@@ -37,10 +46,16 @@ function checkActiveVoyageSeizure() {
         // Hide the voyage selection dropdown section
         document.getElementById('ps_voyageSelectionSection').style.display = 'none';
 
-        // Set the voyage ID in the select dropdown
+        // Set the voyage ID in the select dropdown (wait for voyages to load if needed)
         const voyageSelect = document.getElementById('ps_SeizureVoyageID');
         if (voyageSelect) {
-            voyageSelect.value = activeVoyageID;
+            if (voyagesLoadedSeizure) {
+                voyageSelect.value = activeVoyageID;
+            } else if (voyagesLoadingSeizure) {
+                voyagesLoadingSeizure.then(() => {
+                    voyageSelect.value = activeVoyageID;
+                });
+            }
         }
     } else {
         // Show voyage selection section
@@ -80,6 +95,7 @@ async function loadVoyagesForSeizure() {
                 if (activeVoyageID) {
                     voyageSelect.value = activeVoyageID;
                 }
+                voyagesLoadedSeizure = true;
             }
         }
     } catch (error) {

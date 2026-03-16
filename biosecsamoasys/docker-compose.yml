@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: biosec_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: biosec_root_pass
+      MYSQL_DATABASE: biosecurity_db
+      MYSQL_USER: biosec_user
+      MYSQL_PASSWORD: biosec_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - biosec_network
+    restart: unless-stopped
+
+  lighttpd:
+    image: sebp/lighttpd:latest
+    container_name: biosec_lighttpd
+    ports:
+      - "8081:80"
+    volumes:
+      - ./www:/var/www/localhost/htdocs
+      - ./lighttpd/lighttpd.conf:/etc/lighttpd/lighttpd.conf
+    networks:
+      - biosec_network
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile.php
+    container_name: biosec_php
+    volumes:
+      - ./www:/var/www/localhost/htdocs
+    networks:
+      - biosec_network
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+networks:
+  biosec_network:
+    driver: bridge
+
+volumes:
+  mysql_data:

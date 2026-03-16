@@ -1,0 +1,28 @@
+# Docker volumes
+mysql_data/
+
+# Directories to ignore 
+ImageUpload/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Third-party tools
+phpmyadmin/

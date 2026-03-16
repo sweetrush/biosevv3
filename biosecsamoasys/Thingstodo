@@ -1,0 +1,71 @@
+
+
+About this File 
+- Provide information about what to build 
+
+Technology 
+- Using Docker for the containers for MySQL and Lighttpd and Php for codeing 
+
+
+# Develop the voyage Detail input form 
+- create a form that will take in the following values as strings 
+
+VoyageID
+VoyageNo
+PortOfLoadingID
+LastPortID
+PortOfArrivalID
+LocationID
+ArrivalDate
+Pax
+Crew
+CrewSearched
+TotalDischarged
+VesselID
+RoomSealed
+AirOfSea
+NoXRated
+BondedAnimals
+BondedAnimalsDescription
+AnimalHealthCertificate
+NumberContainers
+NumberCargosDischarged
+PortAuthority
+ModifiedBy
+ModifiedDate
+
+
+# Table of Container Type Count  link to VoyageID  
+VoyageID
+Cars   
+Carsandparts
+CarsandPersonalEffects
+FrozenBeef
+FrozenPork
+FrozenChicken
+FrozenLamb
+FrozenTurky
+FrozenVegies
+FrozenFruits
+FrozenMix
+FreshBeef
+FreshPork
+FreshChicken
+FreshLamb
+FreshTurky
+FreshVegies
+FreshFruits
+FreshMix
+ModifiedByOfficerID
+
+
+# CommodityType Table Columns 
+CommodityTypeID  # autonumber 
+CommodityType 
+CommodityGroupID 
+SortOrderNumber 
+
+# CommodityGroup Table 
+CommodityGroupID 
+CommodityGroup 
+

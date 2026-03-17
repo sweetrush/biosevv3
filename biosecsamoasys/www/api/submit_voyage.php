@@ -8,7 +8,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 session_start();
 
 // Database configuration
-$db_host = 'biosec_mysql';
+$db_host = 'mysql';
 $db_name = 'biosecurity_db';
 $db_user = 'biosec_user';
 $db_pass = 'biosec_pass';
@@ -166,10 +166,14 @@ try {
             ));
 
             // Call the voyage_status.php API to mark step complete
-            @file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+            $statusResult = file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+            if ($statusResult === false) {
+                error_log('Failed to update voyage status for VoyageID: ' . $voyageID);
+                $response['warning'] = 'Voyage details saved but voyage status update failed.';
+            }
         } catch (Exception $e) {
-            // Log error but don't fail the main request
             error_log('Failed to update voyage status: ' . $e->getMessage());
+            $response['warning'] = 'Voyage details saved but voyage status update failed: ' . $e->getMessage();
         }
     } else {
         throw new Exception('Failed to insert voyage details.');

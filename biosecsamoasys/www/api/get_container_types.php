@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 // Database configuration
-$db_host = 'biosec_mysql';
+$db_host = 'mysql';
 $db_name = 'biosecurity_db';
 $db_user = 'biosec_user';
 $db_pass = 'biosec_pass';

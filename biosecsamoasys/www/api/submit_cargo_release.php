@@ -1,6 +1,9 @@
 <?php
 header('Content-Type: application/json');
 
+// Start session for CSRF validation
+session_start();
+
 // Database connection
 $host = 'mysql';
 $dbname = 'biosecurity_db';
@@ -17,6 +20,19 @@ try {
         // Get JSON data
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
+
+        // CSRF token validation
+        if (empty($data['csrf_token']) || empty($_SESSION['csrf_token'])) {
+            $response['message'] = 'CSRF token missing. Please refresh the page and try again.';
+            echo json_encode($response);
+            exit;
+        }
+
+        if (!hash_equals($_SESSION['csrf_token'], $data['csrf_token'])) {
+            $response['message'] = 'Invalid CSRF token. Please refresh the page and try again.';
+            echo json_encode($response);
+            exit;
+        }
 
         // Validate required fields
         if (empty($data['VoyageID']) || empty($data['ReleaseDate'])) {
@@ -86,9 +102,8 @@ try {
 
             // Mark cargo_release step as complete
             try {
-                // Determine the officer who performed the action
-                $performedBy = !empty($data['ReleaseOfficer']) ? $data['ReleaseOfficer'] :
-                              (!empty($data['InspectorName']) ? $data['InspectorName'] : 'Bio Officer');
+                // Use logged-in username from session
+                $performedBy = $_SESSION['username'] ?? 'Bio Officer';
 
                 $statusData = array(
                     'VoyageID' => $data['VoyageID'],
@@ -106,10 +121,14 @@ try {
                 ));
 
                 // Call the voyage_status.php API to mark step complete
-                @file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+                $statusResult = file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+                if ($statusResult === false) {
+                    error_log('Failed to update voyage status for VoyageID: ' . $data['VoyageID']);
+                    $response['warning'] = 'Cargo release saved but voyage status update failed.';
+                }
             } catch (Exception $e) {
-                // Log error but don't fail the main request
                 error_log('Failed to update voyage status: ' . $e->getMessage());
+                $response['warning'] = 'Cargo release saved but voyage status update failed: ' . $e->getMessage();
             }
 
         } catch (Exception $e) {

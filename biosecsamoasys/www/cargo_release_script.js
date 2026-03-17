@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check active voyage after voyages are loaded
     voyagesLoadingRelease.then(() => {
         checkActiveVoyageRelease();
+    }).catch(error => {
+        console.error('Error in voyage loading promise chain:', error);
     });
 
     // Set today's date for release date
@@ -348,8 +350,12 @@ if (cargoReleaseForm) {
             return;
         }
 
+        // Get CSRF token from the hidden field
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+
         // Collect form data
         const formData = {
+            csrf_token: csrfToken,
             VoyageID: voyageID,
             ReleaseNo: document.getElementById('ReleaseNo').value,
             Importer: document.getElementById('ReleaseImporter').value,
@@ -391,8 +397,8 @@ if (cargoReleaseForm) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                messageDiv.className = 'message success';
-                messageDiv.textContent = data.message + ' (Release ID: ' + data.release_id + ')';
+                messageDiv.className = data.warning ? 'message warning' : 'message success';
+                messageDiv.textContent = data.warning || (data.message + ' (Release ID: ' + data.release_id + ')');
                 messageDiv.style.display = 'block';
 
                 // Reset form

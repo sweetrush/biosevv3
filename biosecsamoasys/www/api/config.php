@@ -1,6 +1,6 @@
 <?php
 // Database configuration
-define('DB_HOST', 'biosec_mysql');
+define('DB_HOST', 'mysql');
 define('DB_NAME', 'biosecurity_db');
 define('DB_USER', 'biosec_user');
 define('DB_PASS', 'biosec_pass');

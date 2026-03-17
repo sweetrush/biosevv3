@@ -18,8 +18,14 @@ try {
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // CSRF token validation
-        if (empty($_POST['csrf_token']) || empty($_SESSION['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            $response['message'] = 'CSRF token missing or invalid. Please refresh the page and try again.';
+        if (empty($_POST['csrf_token']) || empty($_SESSION['csrf_token'])) {
+            $response['message'] = 'CSRF token missing. Please refresh the page and try again.';
+            echo json_encode($response);
+            exit;
+        }
+
+        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+            $response['message'] = 'Invalid CSRF token. Please refresh the page and try again.';
             echo json_encode($response);
             exit;
         }
@@ -71,9 +77,9 @@ try {
 
             // Mark passenger_seizure step as complete
             try {
-                // Use OfficerName or ActionOfficer from the form, or fall back to a default
+                // Use OfficerName or ActionOfficer from the form, or fall back to session username
                 $performedBy = !empty($_POST['OfficerName']) ? $_POST['OfficerName'] :
-                              (!empty($_POST['ActionOfficer']) ? $_POST['ActionOfficer'] : 'Bio Officer');
+                              (!empty($_POST['ActionOfficer']) ? $_POST['ActionOfficer'] : ($_SESSION['username'] ?? 'Bio Officer'));
 
                 $statusData = array(
                     'VoyageID' => $_POST['VoyageID'],
@@ -91,10 +97,14 @@ try {
                 ));
 
                 // Call the voyage_status.php API to mark step complete
-                @file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+                $statusResult = file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+                if ($statusResult === false) {
+                    error_log('Failed to update voyage status for VoyageID: ' . $_POST['VoyageID']);
+                    $response['warning'] = 'Passenger seizure saved but voyage status update failed.';
+                }
             } catch (Exception $e) {
-                // Log error but don't fail the main request
                 error_log('Failed to update voyage status: ' . $e->getMessage());
+                $response['warning'] = 'Passenger seizure saved but voyage status update failed: ' . $e->getMessage();
             }
         } else {
             $response['message'] = 'Failed to save seizure record';

@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check active voyage after voyages are loaded
     voyagesLoadingCargoSeizure.then(() => {
         checkActiveVoyageCargoSeizure();
+    }).catch(error => {
+        console.error('Error in voyage loading promise chain:', error);
     });
 
     // Add event listener for clear voyage button
@@ -281,8 +283,8 @@ if (cargoSeizureForm) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                messageDiv.className = 'message success';
-                messageDiv.textContent = data.message + ' (Cargo Seizure ID: ' + data.seizure_id + ')';
+                messageDiv.className = data.warning ? 'message warning' : 'message success';
+                messageDiv.textContent = data.warning || (data.message + ' (Cargo Seizure ID: ' + data.seizure_id + ')');
                 messageDiv.style.display = 'block';
 
                 // Reset form

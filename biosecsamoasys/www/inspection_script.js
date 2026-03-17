@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check active voyage after voyages are loaded
     voyagesLoading.then(() => {
         checkActiveVoyage();
+    }).catch(error => {
+        console.error('Error in voyage loading promise chain:', error);
     });
 
     // Add event listeners for compliance calculation
@@ -308,8 +310,8 @@ if (inspectionForm) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                messageDiv.className = 'message success';
-                messageDiv.textContent = data.message + ' (Inspection ID: ' + data.inspection_id + ')';
+                messageDiv.className = data.warning ? 'message warning' : 'message success';
+                messageDiv.textContent = data.warning || (data.message + ' (Inspection ID: ' + data.inspection_id + ')');
                 messageDiv.style.display = 'block';
 
                 // Reset form

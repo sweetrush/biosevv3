@@ -88,7 +88,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('activeVoyageNo', document.getElementById('VoyageNo').value);
                 localStorage.setItem('activeVesselID', document.getElementById('VesselID').value);
 
-                showMessage(`Voyage details submitted successfully!${cargoMsg} (Voyage ID: ${data.voyage_id}). Switch to Passenger Inspection tab to add inspections.`, 'success');
+                if (data.warning) {
+                    showMessage(data.warning, 'warning');
+                } else {
+                    showMessage(`Voyage details submitted successfully!${cargoMsg} (Voyage ID: ${data.voyage_id}). Switch to Passenger Inspection tab to add inspections.`, 'success');
+                }
 
                 // Reset form after successful submission
                 setTimeout(() => {

@@ -78,10 +78,14 @@ try {
                 ));
 
                 // Call the voyage_status.php API to mark step complete
-                @file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+                $statusResult = file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+                if ($statusResult === false) {
+                    error_log('Failed to update voyage status for VoyageID: ' . $_POST['VoyageID']);
+                    $response['warning'] = 'Passenger inspection saved but voyage status update failed.';
+                }
             } catch (Exception $e) {
-                // Log error but don't fail the main request
                 error_log('Failed to update voyage status: ' . $e->getMessage());
+                $response['warning'] = 'Passenger inspection saved but voyage status update failed: ' . $e->getMessage();
             }
         } else {
             $response['message'] = 'Failed to save inspection record';

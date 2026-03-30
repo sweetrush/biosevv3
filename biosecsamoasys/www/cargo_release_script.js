@@ -207,7 +207,7 @@ function addReleaseItem() {
             <div class="form-row form-row-3">
                 <div class="form-group">
                     <label for="Quantity_${releaseItemCounter}">Quantity</label>
-                    <input type="text" id="Quantity_${releaseItemCounter}" name="items[${releaseItemCounter}][Quantity]">
+                    <input type="number" id="Quantity_${releaseItemCounter}" name="items[${releaseItemCounter}][Quantity]" min="0" step="0.01" placeholder="0">
                 </div>
                 <div class="form-group">
                     <label for="Unit_${releaseItemCounter}">Unit</label>
@@ -215,7 +215,7 @@ function addReleaseItem() {
                 </div>
                 <div class="form-group">
                     <label for="Weight_${releaseItemCounter}">Weight</label>
-                    <input type="text" id="Weight_${releaseItemCounter}" name="items[${releaseItemCounter}][Weight]">
+                    <input type="number" id="Weight_${releaseItemCounter}" name="items[${releaseItemCounter}][Weight]" min="0" step="0.01" placeholder="0">
                 </div>
             </div>
             <div class="form-row" id="transferDepotRow_${releaseItemCounter}" style="display: none;">
@@ -400,6 +400,9 @@ if (cargoReleaseForm) {
                 messageDiv.className = data.warning ? 'message warning' : 'message success';
                 messageDiv.textContent = data.warning || (data.message + ' (Release ID: ' + data.release_id + ')');
                 messageDiv.style.display = 'block';
+
+                // Refresh progress indicators
+                if (typeof loadVoyageStatus === 'function') loadVoyageStatus(formData.VoyageID);
 
                 // Reset form
                 cargoReleaseForm.reset();

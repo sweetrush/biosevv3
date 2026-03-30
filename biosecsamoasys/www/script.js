@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('activeVoyageNo', document.getElementById('VoyageNo').value);
                 localStorage.setItem('activeVesselID', document.getElementById('VesselID').value);
 
+                // Refresh progress indicators
+                if (typeof loadVoyageStatus === 'function') loadVoyageStatus(data.voyage_id);
+
                 if (data.warning) {
                     showMessage(data.warning, 'warning');
                 } else {

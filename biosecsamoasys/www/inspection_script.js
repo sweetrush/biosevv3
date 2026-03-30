@@ -314,6 +314,10 @@ if (inspectionForm) {
                 messageDiv.textContent = data.warning || (data.message + ' (Inspection ID: ' + data.inspection_id + ')');
                 messageDiv.style.display = 'block';
 
+                // Refresh progress indicators
+                const vid = document.getElementById('InspectionVoyageID');
+                if (vid && typeof loadVoyageStatus === 'function') loadVoyageStatus(vid.value);
+
                 // Reset form
                 inspectionForm.reset();
 

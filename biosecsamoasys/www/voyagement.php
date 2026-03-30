@@ -278,6 +278,11 @@ if (empty($_SESSION['csrf_token'])) {
             height: 4px;
         }
 
+        .tabs button.current-step {
+            background: rgba(99, 102, 241, 0.15);
+            border-bottom: 3px solid #6366f1;
+        }
+
         .tab-content {
             display: none;
             animation: slideInFade 0.5s cubic-bezier(0.4, 0, 0.2, 1);

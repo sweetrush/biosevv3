@@ -17,6 +17,12 @@ if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
     exit;
 }
 
+// Helper function to convert empty strings to NULL for INT fields
+function toIntOrNull($value) {
+    if ($value === '' || $value === null) return null;
+    return (int)$value;
+}
+
 // Database connection
 $host = 'mysql';
 $dbname = 'biosecurity_db';
@@ -45,12 +51,12 @@ try {
 
         $stmt = $conn->prepare($sql);
 
-        // Bind parameters
+        // Bind parameters - convert numeric fields to INT
         $stmt->bindParam(':VoyageID', $_POST['VoyageID'], PDO::PARAM_INT);
-        $stmt->bindParam(':CommodityTypeID', $_POST['CommodityTypeID'], PDO::PARAM_STR);
-        $stmt->bindParam(':LocationID', $_POST['LocationID'], PDO::PARAM_STR);
-        $stmt->bindParam(':NoOfConsignments', $_POST['NoOfConsignments'], PDO::PARAM_STR);
-        $stmt->bindParam(':NoOfNonCompliant', $_POST['NoOfNonCompliant'], PDO::PARAM_STR);
+        $stmt->bindValue(':CommodityTypeID', toIntOrNull($_POST['CommodityTypeID'] ?? null), PDO::PARAM_INT);
+        $stmt->bindValue(':LocationID', toIntOrNull($_POST['LocationID'] ?? null), PDO::PARAM_INT);
+        $stmt->bindValue(':NoOfConsignments', toIntOrNull($_POST['NoOfConsignments'] ?? null), PDO::PARAM_INT);
+        $stmt->bindValue(':NoOfNonCompliant', toIntOrNull($_POST['NoOfNonCompliant'] ?? null), PDO::PARAM_INT);
         $stmt->bindParam(':ModifiedBy', $_POST['ModifiedBy'], PDO::PARAM_STR);
         $stmt->bindParam(':ModifiedDate', $_POST['ModifiedDate'], PDO::PARAM_STR);
 
@@ -78,7 +84,7 @@ try {
                 ));
 
                 // Call the voyage_status.php API to mark step complete
-                $statusResult = file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+                $statusResult = file_get_contents('http://lighttpd/api/voyage_status.php', false, $context);
                 if ($statusResult === false) {
                     error_log('Failed to update voyage status for VoyageID: ' . $_POST['VoyageID']);
                     $response['warning'] = 'Passenger inspection saved but voyage status update failed.';

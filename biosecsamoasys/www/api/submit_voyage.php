@@ -16,6 +16,12 @@ $db_pass = 'biosec_pass';
 // Response array
 $response = array('success' => false, 'message' => '');
 
+// Helper function to convert empty strings to NULL for INT fields
+function toIntOrNull($value) {
+    if ($value === '' || $value === null) return null;
+    return (int)$value;
+}
+
 try {
     // Validate CSRF token
     if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token'])) {
@@ -94,26 +100,26 @@ try {
 
     $stmt = $conn->prepare($sql);
 
-    // Bind parameters (all as strings as per requirements)
+    // Bind parameters - convert numeric fields to INT
     $stmt->bindParam(':VoyageNo', $_POST['VoyageNo'], PDO::PARAM_STR);
-    $stmt->bindParam(':PortOfLoadingID', $_POST['PortOfLoadingID'], PDO::PARAM_STR);
-    $stmt->bindParam(':LastPortID', $_POST['LastPortID'], PDO::PARAM_STR);
-    $stmt->bindParam(':PortOfArrivalID', $_POST['PortOfArrivalID'], PDO::PARAM_STR);
-    $stmt->bindParam(':LocationID', $_POST['LocationID'], PDO::PARAM_STR);
+    $stmt->bindValue(':PortOfLoadingID', toIntOrNull($_POST['PortOfLoadingID'] ?? null), PDO::PARAM_INT);
+    $stmt->bindValue(':LastPortID', toIntOrNull($_POST['LastPortID'] ?? null), PDO::PARAM_INT);
+    $stmt->bindValue(':PortOfArrivalID', toIntOrNull($_POST['PortOfArrivalID'] ?? null), PDO::PARAM_INT);
+    $stmt->bindValue(':LocationID', toIntOrNull($_POST['LocationID'] ?? null), PDO::PARAM_INT);
     $stmt->bindParam(':ArrivalDate', $_POST['ArrivalDate'], PDO::PARAM_STR);
-    $stmt->bindParam(':Pax', $_POST['Pax'], PDO::PARAM_STR);
-    $stmt->bindParam(':Crew', $_POST['Crew'], PDO::PARAM_STR);
-    $stmt->bindParam(':CrewSearched', $_POST['CrewSearched'], PDO::PARAM_STR);
-    $stmt->bindParam(':TotalDischarged', $_POST['TotalDischarged'], PDO::PARAM_STR);
+    $stmt->bindValue(':Pax', toIntOrNull($_POST['Pax'] ?? null), PDO::PARAM_INT);
+    $stmt->bindValue(':Crew', toIntOrNull($_POST['Crew'] ?? null), PDO::PARAM_INT);
+    $stmt->bindValue(':CrewSearched', toIntOrNull($_POST['CrewSearched'] ?? null), PDO::PARAM_INT);
+    $stmt->bindValue(':TotalDischarged', toIntOrNull($_POST['TotalDischarged'] ?? null), PDO::PARAM_INT);
     $stmt->bindParam(':VesselID', $_POST['VesselID'], PDO::PARAM_STR);
     $stmt->bindParam(':RoomSealed', $_POST['RoomSealed'], PDO::PARAM_STR);
     $stmt->bindParam(':AirOfSea', $_POST['AirOfSea'], PDO::PARAM_STR);
-    $stmt->bindParam(':NoXRated', $_POST['NoXRated'], PDO::PARAM_STR);
+    $stmt->bindValue(':NoXRated', toIntOrNull($_POST['NoXRated'] ?? null), PDO::PARAM_INT);
     $stmt->bindParam(':BondedAnimals', $_POST['BondedAnimals'], PDO::PARAM_STR);
     $stmt->bindParam(':BondedAnimalsDescription', $_POST['BondedAnimalsDescription'], PDO::PARAM_STR);
     $stmt->bindParam(':AnimalHealthCertificate', $_POST['AnimalHealthCertificate'], PDO::PARAM_STR);
-    $stmt->bindParam(':NumberContainers', $_POST['NumberContainers'], PDO::PARAM_STR);
-    $stmt->bindParam(':NumberCargosDischarged', $_POST['NumberCargosDischarged'], PDO::PARAM_STR);
+    $stmt->bindValue(':NumberContainers', toIntOrNull($_POST['NumberContainers'] ?? null), PDO::PARAM_INT);
+    $stmt->bindValue(':NumberCargosDischarged', toIntOrNull($_POST['NumberCargosDischarged'] ?? null), PDO::PARAM_INT);
     $stmt->bindParam(':PortAuthority', $_POST['PortAuthority'], PDO::PARAM_STR);
     $stmt->bindParam(':ModifiedBy', $_POST['ModifiedBy'], PDO::PARAM_STR);
     $stmt->bindParam(':ModifiedDate', $_POST['ModifiedDate'], PDO::PARAM_STR);
@@ -135,7 +141,7 @@ try {
                 $containerStmt = $conn->prepare($containerSql);
                 $containerStmt->bindParam(':VoyageID', $voyageID, PDO::PARAM_INT);
                 $containerStmt->bindParam(':container_type_code', $containerCode, PDO::PARAM_STR);
-                $containerStmt->bindParam(':count', $value, PDO::PARAM_STR);
+                $containerStmt->bindParam(':count', $value, PDO::PARAM_INT);
 
                 if ($containerStmt->execute()) {
                     $containerInserted++;
@@ -148,7 +154,28 @@ try {
         $response['voyage_id'] = $voyageID;
         $response['containers_inserted'] = $containerInserted;
 
-        // Mark voyage_details step as complete
+        // Create voyage_status record directly (Fix 2)
+        try {
+            $statusSql = "INSERT INTO voyage_status (VoyageID, status, current_step, voyage_details_complete)
+                          VALUES (:VoyageID, 'in_progress', 'voyage_details', 1)";
+            $statusStmt = $conn->prepare($statusSql);
+            $statusStmt->bindParam(':VoyageID', $voyageID, PDO::PARAM_INT);
+            $statusStmt->execute();
+
+            // Create audit trail entry
+            $auditSql = "INSERT INTO voyage_audit_trail (VoyageID, action, action_details, performed_by)
+                         VALUES (:VoyageID, 'complete_step', 'Completed step: voyage_details', :PerformedBy)";
+            $auditStmt = $conn->prepare($auditSql);
+            $auditStmt->bindParam(':VoyageID', $voyageID, PDO::PARAM_INT);
+            $performedByAudit = $_POST['ModifiedBy'] ?? 'System';
+            $auditStmt->bindParam(':PerformedBy', $performedByAudit, PDO::PARAM_STR);
+            $auditStmt->execute();
+        } catch (Exception $e) {
+            error_log('Failed to create voyage_status record: ' . $e->getMessage());
+            $response['warning'] = 'Voyage details saved but voyage status initialization failed.';
+        }
+
+        // Mark voyage_details step as complete via HTTP (Fix 3: use lighttpd service name)
         try {
             $statusData = array(
                 'VoyageID' => $voyageID,
@@ -166,7 +193,7 @@ try {
             ));
 
             // Call the voyage_status.php API to mark step complete
-            $statusResult = file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+            $statusResult = file_get_contents('http://lighttpd/api/voyage_status.php', false, $context);
             if ($statusResult === false) {
                 error_log('Failed to update voyage status for VoyageID: ' . $voyageID);
                 $response['warning'] = 'Voyage details saved but voyage status update failed.';

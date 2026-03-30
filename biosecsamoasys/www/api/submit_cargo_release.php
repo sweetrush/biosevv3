@@ -4,6 +4,17 @@ header('Content-Type: application/json');
 // Start session for CSRF validation
 session_start();
 
+// Helper functions for type conversion
+function toIntOrNull($value) {
+    if ($value === '' || $value === null) return null;
+    return (int)$value;
+}
+
+function toFloatOrNull($value) {
+    if ($value === '' || $value === null) return null;
+    return (float)$value;
+}
+
 // Database connection
 $host = 'mysql';
 $dbname = 'biosecurity_db';
@@ -58,7 +69,7 @@ try {
             $stmt->bindParam(':Importer', $data['Importer'], PDO::PARAM_STR);
             $stmt->bindParam(':ReleaseType', $data['ReleaseType'], PDO::PARAM_STR);
             $stmt->bindParam(':ReleaseDate', $data['ReleaseDate'], PDO::PARAM_STR);
-            $stmt->bindParam(':TotalCosts', $data['TotalCosts'], PDO::PARAM_STR);
+            $stmt->bindValue(':TotalCosts', toFloatOrNull($data['TotalCosts'] ?? null), PDO::PARAM_STR);
             $stmt->bindParam(':Comments', $data['Comments'], PDO::PARAM_STR);
 
             $stmt->execute();
@@ -79,15 +90,15 @@ try {
                     $itemStmt->bindParam(':ReleaseID', $releaseID, PDO::PARAM_INT);
                     $itemStmt->bindParam(':ContainerBLNo', $item['ContainerBLNo'], PDO::PARAM_STR);
                     $itemStmt->bindParam(':Description', $item['Description'], PDO::PARAM_STR);
-                    $itemStmt->bindParam(':Quantity', $item['Quantity'], PDO::PARAM_STR);
+                    $itemStmt->bindValue(':Quantity', toFloatOrNull($item['Quantity'] ?? null), PDO::PARAM_STR);
                     $itemStmt->bindParam(':Unit', $item['Unit'], PDO::PARAM_STR);
-                    $itemStmt->bindParam(':Weight', $item['Weight'], PDO::PARAM_STR);
+                    $itemStmt->bindValue(':Weight', toFloatOrNull($item['Weight'] ?? null), PDO::PARAM_STR);
                     $itemStmt->bindParam(':Action', $item['Action'], PDO::PARAM_STR);
                     $itemStmt->bindParam(':CommodityType', $item['CommodityType'], PDO::PARAM_STR);
                     $itemStmt->bindParam(':ItemCondition', $item['ItemCondition'], PDO::PARAM_STR);
                     $itemStmt->bindParam(':PermitNo', $item['PermitNo'], PDO::PARAM_STR);
                     $itemStmt->bindParam(':CertificateNo', $item['CertificateNo'], PDO::PARAM_STR);
-                    $itemStmt->bindParam(':CountryOfOrigin', $item['CountryOfOrigin'], PDO::PARAM_STR);
+                    $itemStmt->bindValue(':CountryOfOrigin', toIntOrNull($item['CountryOfOrigin'] ?? null), PDO::PARAM_INT);
                     $itemStmt->bindParam(':TransferDepot', $item['TransferDepot'], PDO::PARAM_STR);
                     $itemStmt->execute();
                 }
@@ -121,7 +132,7 @@ try {
                 ));
 
                 // Call the voyage_status.php API to mark step complete
-                $statusResult = file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+                $statusResult = file_get_contents('http://lighttpd/api/voyage_status.php', false, $context);
                 if ($statusResult === false) {
                     error_log('Failed to update voyage status for VoyageID: ' . $data['VoyageID']);
                     $response['warning'] = 'Cargo release saved but voyage status update failed.';

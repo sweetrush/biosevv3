@@ -122,7 +122,7 @@
             <div class="form-row form-row-3">
                 <div class="form-group">
                     <label for="cs_Quantity">Quantity</label>
-                    <input type="text" id="cs_Quantity" name="Quantity">
+                    <input type="number" id="cs_Quantity" name="Quantity" min="0" step="0.01" placeholder="0">
                 </div>
                 <div class="form-group">
                     <label for="cs_Unit">Unit</label>
@@ -140,7 +140,7 @@
                 </div>
                 <div class="form-group">
                     <label for="cs_VolumeKg">Volume (kg)</label>
-                    <input type="text" id="cs_VolumeKg" name="VolumeKg" placeholder="3">
+                    <input type="number" id="cs_VolumeKg" name="VolumeKg" min="0" step="0.01" placeholder="0.00">
                 </div>
             </div>
         </div>

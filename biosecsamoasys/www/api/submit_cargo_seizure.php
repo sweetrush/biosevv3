@@ -4,6 +4,17 @@ header('Content-Type: application/json');
 // Start session for CSRF validation
 session_start();
 
+// Helper functions for type conversion
+function toIntOrNull($value) {
+    if ($value === '' || $value === null) return null;
+    return (int)$value;
+}
+
+function toFloatOrNull($value) {
+    if ($value === '' || $value === null) return null;
+    return (float)$value;
+}
+
 // Database connection
 $host = 'mysql';
 $dbname = 'biosecurity_db';
@@ -51,22 +62,22 @@ try {
 
         $stmt = $conn->prepare($sql);
 
-        // Bind parameters
+        // Bind parameters - convert numeric fields to INT/DECIMAL
         $stmt->bindParam(':VoyageID', $_POST['VoyageID'], PDO::PARAM_INT);
         $stmt->bindParam(':ContainerCargoRefNo', $_POST['ContainerCargoRefNo'], PDO::PARAM_STR);
         $stmt->bindParam(':Importer', $_POST['Importer'], PDO::PARAM_STR);
         $stmt->bindParam(':CargoDescription', $_POST['CargoDescription'], PDO::PARAM_STR);
         $stmt->bindParam(':DepotName', $_POST['DepotName'], PDO::PARAM_STR);
         $stmt->bindParam(':DetectionMethod', $_POST['DetectionMethod'], PDO::PARAM_STR);
-        $stmt->bindParam(':PortOfEntry', $_POST['PortOfEntry'], PDO::PARAM_STR);
+        $stmt->bindValue(':PortOfEntry', toIntOrNull($_POST['PortOfEntry'] ?? null), PDO::PARAM_INT);
         $stmt->bindParam(':SeizureDate', $_POST['SeizureDate'], PDO::PARAM_STR);
         $stmt->bindParam(':SeizureNo', $_POST['SeizureNo'], PDO::PARAM_STR);
-        $stmt->bindParam(':CountryOfOrigin', $_POST['CountryOfOrigin'], PDO::PARAM_STR);
+        $stmt->bindValue(':CountryOfOrigin', toIntOrNull($_POST['CountryOfOrigin'] ?? null), PDO::PARAM_INT);
         $stmt->bindParam(':CommodityType', $_POST['CommodityType'], PDO::PARAM_STR);
         $stmt->bindParam(':Description', $_POST['Description'], PDO::PARAM_STR);
-        $stmt->bindParam(':Quantity', $_POST['Quantity'], PDO::PARAM_STR);
+        $stmt->bindValue(':Quantity', toFloatOrNull($_POST['Quantity'] ?? null), PDO::PARAM_STR);
         $stmt->bindParam(':Unit', $_POST['Unit'], PDO::PARAM_STR);
-        $stmt->bindParam(':VolumeKg', $_POST['VolumeKg'], PDO::PARAM_STR);
+        $stmt->bindValue(':VolumeKg', toFloatOrNull($_POST['VolumeKg'] ?? null), PDO::PARAM_STR);
         $stmt->bindParam(':SeizingOfficerName', $_POST['SeizingOfficerName'], PDO::PARAM_STR);
         $stmt->bindParam(':ActionTaken', $_POST['ActionTaken'], PDO::PARAM_STR);
         $stmt->bindParam(':ActionOfficer', $_POST['ActionOfficer'], PDO::PARAM_STR);
@@ -101,7 +112,7 @@ try {
                 ));
 
                 // Call the voyage_status.php API to mark step complete
-                $statusResult = file_get_contents('http://localhost/api/voyage_status.php', false, $context);
+                $statusResult = file_get_contents('http://lighttpd/api/voyage_status.php', false, $context);
                 if ($statusResult === false) {
                     error_log('Failed to update voyage status for VoyageID: ' . $_POST['VoyageID']);
                     $response['warning'] = 'Cargo seizure saved but voyage status update failed.';

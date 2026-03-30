@@ -262,6 +262,10 @@ if (seizureForm) {
                 messageDiv.textContent = data.warning || (data.message + ' (Seizure ID: ' + data.seizure_id + ')');
                 messageDiv.style.display = 'block';
 
+                // Refresh progress indicators
+                const vid = document.getElementById('ps_SeizureVoyageID');
+                if (vid && typeof loadVoyageStatus === 'function') loadVoyageStatus(vid.value);
+
                 // Reset form
                 seizureForm.reset();
 

@@ -287,6 +287,9 @@ if (cargoSeizureForm) {
                 messageDiv.textContent = data.warning || (data.message + ' (Cargo Seizure ID: ' + data.seizure_id + ')');
                 messageDiv.style.display = 'block';
 
+                // Refresh progress indicators
+                if (typeof loadVoyageStatus === 'function') loadVoyageStatus(voyageID);
+
                 // Reset form
                 cargoSeizureForm.reset();
 

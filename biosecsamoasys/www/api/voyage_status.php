@@ -75,7 +75,7 @@ try {
 
                         $allComplete = true;
                         foreach ($status as $key => $value) {
-                            if ($value === false) {
+                            if (!$value) {
                                 $allComplete = false;
                                 break;
                             }

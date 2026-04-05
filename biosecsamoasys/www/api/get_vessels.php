@@ -14,9 +14,10 @@ try {
     $response = array('success' => false);
 
     // Get all vessels
-    $sql = "SELECT VesselID, VesselName, VesselType
+    // Note: vessels table uses snake_case columns, aliased to camelCase for frontend compatibility
+    $sql = "SELECT vessel_id AS VesselID, vessel_name AS VesselName, vessel_type AS VesselType
             FROM vessels
-            ORDER BY VesselName ASC";
+            ORDER BY vessel_name ASC";
 
     $stmt = $conn->query($sql);
     $vessels = $stmt->fetchAll(PDO::FETCH_ASSOC);

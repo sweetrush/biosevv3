@@ -161,8 +161,10 @@ try {
                 $stmt = $conn->prepare($sql);
                 $stmt->bindParam(':VoyageID', $voyageId);
                 $stmt->bindParam(':ModifiedBy', $_PUT['ModifiedBy']);
-                $stmt->bindParam(':PreviousValues', json_encode($currentValues));
-                $stmt->bindParam(':NewValues', json_encode($_PUT));
+                $previousValuesJson = json_encode($currentValues);
+                $newValuesJson = json_encode($_PUT);
+                $stmt->bindParam(':PreviousValues', $previousValuesJson);
+                $stmt->bindParam(':NewValues', $newValuesJson);
                 $stmt->execute();
 
                 $conn->commit();

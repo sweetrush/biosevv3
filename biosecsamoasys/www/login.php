@@ -1,4 +1,5 @@
 <?php
+define('CSS_CACHE_BUST', 2);
 session_start();
 
 // Redirect to index if already logged in
@@ -21,14 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $pdo = getDBConnection();
-
-            // Get user from database
             $stmt = $pdo->prepare("SELECT user_id, username, password_hash, first_name, last_name, email, access_level, department, is_active FROM users WHERE username = ? AND is_active = 1");
             $stmt->execute([$username]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user && password_verify($password, $user['password_hash'])) {
-                // Login successful
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['first_name'] = $user['first_name'];
@@ -37,10 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['access_level'] = $user['access_level'];
                 $_SESSION['department'] = $user['department'];
 
-                // Regenerate session ID for security
                 session_regenerate_id(true);
 
-                // Redirect to dashboard
                 header('Location: index.php');
                 exit;
             } else {
@@ -56,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get any flash messages
 $flash_message = $_SESSION['flash_message'] ?? '';
 unset($_SESSION['flash_message']);
 ?>
@@ -68,7 +63,7 @@ unset($_SESSION['flash_message']);
     <meta name="description" content="Samoa Biosecurity System - Secure Portal Access">
     <meta name="theme-color" content="#667eea">
     <title>Login - Samoa Biosecurity System</title>
-    <link rel="stylesheet" href="styles.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="styles.css?v=<?php echo CSS_CACHE_BUST; ?>">
     <style>
         .login-container {
             min-height: 100vh;
@@ -77,7 +72,6 @@ unset($_SESSION['flash_message']);
             justify-content: center;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 15px;
-            box-sizing: border-box;
         }
 
         .login-box {
@@ -87,7 +81,6 @@ unset($_SESSION['flash_message']);
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             width: 100%;
             max-width: 400px;
-            box-sizing: border-box;
         }
 
         .login-header {
@@ -183,109 +176,29 @@ unset($_SESSION['flash_message']);
             font-size: 0.9em;
         }
 
-
-        /* Responsive Design */
         @media (max-width: 480px) {
             .login-box {
                 padding: 30px 20px;
-                max-width: 100%;
             }
 
             .login-header h1 {
                 font-size: 1.5em;
             }
 
-            .login-header p {
-                font-size: 0.9em;
-            }
-
             .form-group input {
                 padding: 14px;
-                font-size: 16px; /* Prevents zoom on iOS */
+                font-size: 16px;
             }
 
             .btn-login {
                 padding: 16px;
-                font-size: 1em;
-            }
-
-            .default-credentials {
-                padding: 12px;
-                font-size: 0.85em;
-            }
-
-            .default-credentials h4 {
-                font-size: 0.95em;
-            }
-
-            .default-credentials p {
-                margin: 8px 0;
             }
         }
 
-        @media (max-width: 360px) {
-            .login-box {
-                padding: 25px 15px;
-            }
-
-            .login-header .logo {
-                font-size: 2.5em;
-            }
-
-            .login-header h1 {
-                font-size: 1.3em;
-            }
-
-            .form-group input {
-                padding: 12px;
-            }
-
-            .btn-login {
-                padding: 14px;
-            }
-        }
-
-        @media (min-width: 768px) {
-            .login-box {
-                max-width: 450px;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .login-box {
-                max-width: 500px;
-            }
-        }
-
-        /* Improve touch targets on mobile */
         @media (hover: none) and (pointer: coarse) {
             .btn-login,
             .form-group input {
                 min-height: 48px;
-            }
-        }
-
-        /* Landscape mode on mobile */
-        @media (max-height: 500px) and (orientation: landscape) {
-            .login-container {
-                align-items: flex-start;
-                padding: 10px;
-            }
-
-            .login-box {
-                margin-top: 10px;
-            }
-
-            .login-header {
-                margin-bottom: 20px;
-            }
-
-            .login-header .logo {
-                font-size: 2em;
-            }
-
-            .default-credentials {
-                margin-top: 15px;
             }
         }
     </style>
@@ -294,7 +207,7 @@ unset($_SESSION['flash_message']);
     <div class="login-container">
         <div class="login-box">
             <div class="login-header">
-                <div class="logo">🚢</div>
+                <div class="logo">&#x1F6A2;</div>
                 <h1>Samoa Biosecurity</h1>
                 <p>Secure Portal Access</p>
             </div>
@@ -336,22 +249,9 @@ unset($_SESSION['flash_message']);
     </div>
 
     <script>
-        // Auto-focus username field
         document.getElementById('username').focus();
 
-        // Mobile-optimized form handling
         document.addEventListener('DOMContentLoaded', function() {
-            // Add enter key handling for better mobile UX
-            const inputs = document.querySelectorAll('input[type="text"], input[type="password"]');
-            inputs.forEach(function(input) {
-                input.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        document.querySelector('.btn-login').click();
-                    }
-                });
-            });
-
-            // Handle form submission with loading state
             const form = document.querySelector('form');
             const submitBtn = document.querySelector('.btn-login');
 
@@ -359,40 +259,6 @@ unset($_SESSION['flash_message']);
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Signing In...';
                 submitBtn.style.opacity = '0.7';
-            });
-
-            // Prevent zoom on iOS when focusing inputs
-            inputs.forEach(function(input) {
-                input.addEventListener('focus', function() {
-                    if (window.innerWidth < 768) {
-                        document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1');
-                    }
-                });
-
-                input.addEventListener('blur', function() {
-                    document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=device-width, initial-scale=1');
-                });
-            });
-
-            // Handle orientation change
-            window.addEventListener('orientationchange', function() {
-                setTimeout(function() {
-                    window.scrollTo(0, 0);
-                }, 100);
-            });
-
-            // Add touch feedback for better mobile interaction
-            const interactiveElements = document.querySelectorAll('input, button');
-            interactiveElements.forEach(function(element) {
-                element.addEventListener('touchstart', function() {
-                    this.style.opacity = '0.8';
-                });
-
-                element.addEventListener('touchend', function() {
-                    setTimeout(() => {
-                        this.style.opacity = '1';
-                    }, 150);
-                });
             });
         });
     </script>

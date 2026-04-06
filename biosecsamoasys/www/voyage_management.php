@@ -1,748 +1,412 @@
 <?php
+define('CSS_CACHE_BUST', 2);
 require_once 'api/auth_check.php';
+$pageTitle = 'Voyage Management - Biosecurity System';
+$currentPage = 'voyage_management';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voyage Management - Biosecurity System</title>
-    <link rel="stylesheet" href="styles.css?v=<?php echo time(); ?>">
-    <style>
-        .app-wrapper {
-            display: flex;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
+<style>
+    .management-header {
+        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        color: white;
+        padding: 40px;
+        text-align: center;
+    }
 
-        .sidebar {
-            width: 250px;
-            background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-            left: 0;
-            top: 0;
-            z-index: 1000;
-            transition: transform 0.3s ease;
-        }
+    .management-header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
 
-        .sidebar-header {
-            padding: 25px 20px;
-            background: #1a202c;
-            border-bottom: 1px solid #4a5568;
-        }
+    .management-header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+    }
 
-        .sidebar-user-tile {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+    .management-content {
+        padding: 40px;
+    }
 
-        .sidebar-logo {
-            font-size: 1.5em;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+    .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
 
-        .sidebar-subtitle {
-            font-size: 0.85em;
-            color: #a0aec0;
-        }
+    .search-filters {
+        display: flex;
+        gap: 15px;
+        flex: 1;
+        flex-wrap: wrap;
+    }
 
-        .sidebar-nav {
-            flex: 1;
-            padding: 20px 0;
-            overflow-y: auto;
-        }
+    .search-input {
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1em;
+        min-width: 250px;
+        transition: all 0.3s ease;
+    }
 
-        .nav-section {
-            margin-bottom: 25px;
-        }
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
 
-        .nav-section-title {
-            padding: 0 20px;
-            margin-bottom: 10px;
-            font-size: 0.75em;
-            text-transform: uppercase;
-            color: #718096;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
+    .filter-select {
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1em;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
 
-        .nav-item {
-            display: block;
-            padding: 15px 20px;
-            color: #e2e8f0;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border-left: 3px solid transparent;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 500;
-        }
+    .filter-select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
 
-        .nav-item:hover {
-            background: rgba(102, 126, 234, 0.2);
-            border-left-color: #667eea;
-            padding-left: 25px;
-        }
+    .btn {
+        padding: 12px 24px;
+        font-size: 1em;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
 
-        .nav-item.active {
-            background: rgba(102, 126, 234, 0.3);
-            border-left-color: #667eea;
-            color: white;
-        }
+    .btn:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
 
-        .nav-icon {
-            font-size: 1.3em;
-            width: 24px;
-            text-align: center;
-        }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
 
-        .sidebar-footer {
-            padding: 20px;
-            border-top: 2px solid #4a5568;
-            background: #1a202c;
-        }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
 
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #e2e8f0;
-        }
+    .btn-secondary {
+        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+        color: #4a5568;
+    }
 
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: white;
-        }
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+    }
 
-        .user-details {
-            flex: 1;
-        }
+    .btn-sm {
+        padding: 8px 16px;
+        font-size: 0.9em;
+    }
 
-        .user-name {
-            font-weight: 600;
-            font-size: 0.95em;
-        }
+    .voyages-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
 
-        .logout-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 8px 15px;
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            text-decoration: none;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-            font-size: 0.85em;
-            font-weight: 600;
-            margin-top: 15px;
-            width: 100%;
-        }
+    .voyages-table th {
+        background: linear-gradient(135deg, #f7fafc 0%, #e2e8f0 100%);
+        padding: 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #2d3748;
+        border-bottom: 2px solid #e2e8f0;
+    }
 
-        .main-content {
-            flex: 1;
-            margin-left: 250px;
-            padding: 20px;
-            transition: margin-left 0.3s ease;
-        }
+    .voyages-table td {
+        padding: 16px;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: middle;
+    }
 
-        .content-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
+    .voyages-table tr:hover {
+        background: #f7fafc;
+    }
 
-        .management-header {
-            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-            color: white;
-            padding: 40px;
-            text-align: center;
-        }
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
 
-        .management-header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
+    .status-draft {
+        background: #fef3c7;
+        color: #92400e;
+    }
 
-        .management-header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
+    .status-in_progress {
+        background: #dbeafe;
+        color: #1e40af;
+    }
 
-        .management-content {
-            padding: 40px;
-        }
+    .status-completed {
+        background: #d1fae5;
+        color: #065f46;
+    }
 
+    .status-archived {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
+    .step-progress {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .step-indicator {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8em;
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .step-indicator.complete {
+        background: #10b981;
+        color: white;
+    }
+
+    .step-indicator.current {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .actions-cell {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 0;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow: hidden;
+        animation: slideIn 0.3s ease;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        color: white;
+        padding: 20px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 1.5em;
+    }
+
+    .close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5em;
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.3s ease;
+    }
+
+    .close:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-body {
+        padding: 30px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1em;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .modal-footer {
+        padding: 20px 30px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+    }
+
+    .empty-state-icon {
+        font-size: 4em;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+        color: #374151;
+    }
+
+    .empty-state p {
+        font-size: 1.1em;
+        margin-bottom: 30px;
+    }
+
+    .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 60px 20px;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #e5e7eb;
+        border-top: 5px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 768px) {
         .action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 20px;
+            flex-direction: column;
+            align-items: stretch;
         }
 
         .search-filters {
-            display: flex;
-            gap: 15px;
-            flex: 1;
-            flex-wrap: wrap;
-        }
-
-        .search-input {
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1em;
-            min-width: 250px;
-            transition: all 0.3s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .filter-select {
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1em;
-            background: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            font-size: 1em;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
-            color: #4a5568;
-        }
-
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
-        }
-
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 0.9em;
-        }
-
-        .voyages-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .voyages-table th {
-            background: linear-gradient(135deg, #f7fafc 0%, #e2e8f0 100%);
-            padding: 16px;
-            text-align: left;
-            font-weight: 600;
-            color: #2d3748;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .voyages-table td {
-            padding: 16px;
-            border-bottom: 1px solid #e2e8f0;
-            vertical-align: middle;
-        }
-
-        .voyages-table tr:hover {
-            background: #f7fafc;
-        }
-
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status-draft {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .status-in_progress {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .status-completed {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-archived {
-            background: #e5e7eb;
-            color: #374151;
-        }
-
-        .step-progress {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .step-indicator {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #e5e7eb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8em;
-            font-weight: 600;
-            color: #6b7280;
-        }
-
-        .step-indicator.complete {
-            background: #10b981;
-            color: white;
-        }
-
-        .step-indicator.current {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .actions-cell {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.3s ease;
-        }
-
-        .modal-content {
-            background: white;
-            margin: 5% auto;
-            padding: 0;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow: hidden;
-            animation: slideIn 0.3s ease;
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-            color: white;
-            padding: 20px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h2 {
-            margin: 0;
-            font-size: 1.5em;
-        }
-
-        .close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5em;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: background 0.3s ease;
-        }
-
-        .close:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .modal-body {
-            padding: 30px;
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1em;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            flex-direction: column;
         }
 
         .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr;
         }
 
-        .modal-footer {
-            padding: 20px 30px;
-            border-top: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
+        .voyages-table {
+            font-size: 0.9em;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6b7280;
+        .voyages-table th,
+        .voyages-table td {
+            padding: 12px 8px;
         }
 
-        .empty-state-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
-            opacity: 0.5;
+        .actions-cell {
+            flex-direction: column;
+            gap: 4px;
         }
-
-        .empty-state h3 {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-            color: #374151;
-        }
-
-        .empty-state p {
-            font-size: 1.1em;
-            margin-bottom: 30px;
-        }
-
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 60px 20px;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #e5e7eb;
-            border-top: 5px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .sidebar.active {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            .action-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-filters {
-                flex-direction: column;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .voyages-table {
-                font-size: 0.9em;
-            }
-
-            .voyages-table th,
-            .voyages-table td {
-                padding: 12px 8px;
-            }
-
-            .actions-cell {
-                flex-direction: column;
-                gap: 4px;
-            }
-        }
-
-        /* Theme Styles */
-        body.theme-green .app-wrapper {
-            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-        }
-
-        body.theme-green .nav-item.active {
-            background: rgba(39, 174, 96, 0.3);
-            border-left-color: #27ae60;
-        }
-
-        body.theme-green .nav-item:hover {
-            background: rgba(39, 174, 96, 0.2);
-            border-left-color: #27ae60;
-        }
-
-        body.theme-blue .app-wrapper {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        }
-
-        body.theme-blue .nav-item.active {
-            background: rgba(52, 152, 219, 0.3);
-            border-left-color: #3498db;
-        }
-
-        body.theme-blue .nav-item:hover {
-            background: rgba(52, 152, 219, 0.2);
-            border-left-color: #3498db;
-        }
-
-        body.theme-office .app-wrapper {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-        }
-
-        body.theme-office .nav-item.active {
-            background: rgba(108, 117, 125, 0.3);
-            border-left-color: #6c757d;
-        }
-
-        body.theme-office .nav-item:hover {
-            background: rgba(108, 117, 125, 0.2);
-            border-left-color: #6c757d;
-        }
-
-        body.theme-office .nav-icon {
-            filter: grayscale(100%);
-            opacity: 0.8;
-        }
-
-        body.theme-office .nav-item.active .nav-icon {
-            filter: grayscale(50%);
-            opacity: 1;
-        }
-
-        body.theme-office .btn-primary {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-        }
-
-        body.theme-office .btn-primary:hover {
-            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
-        }
-    </style>
-</head>
-<body>
-    <div class="app-wrapper">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">
-                    🚢
-                    <span>BioSecure</span>
-                </div>
-                <div class="sidebar-subtitle">Samoa Biosecurity</div>
-
-                <!-- User Profile Tile at Top -->
-                <div class="sidebar-user-tile">
-                    <div class="user-info">
-                        <div class="user-avatar"><?php echo strtoupper(substr($_SESSION['first_name'] ?? 'B', 0, 1) . substr($_SESSION['last_name'] ?? 'S', 0, 1)); ?></div>
-                        <div class="user-details">
-                            <div class="user-name"><?php echo htmlspecialchars(($_SESSION['first_name'] ?? 'Bio') . ' ' . ($_SESSION['last_name'] ?? 'Officer')); ?></div>
-                            <div class="user-role"><?php echo ucfirst(htmlspecialchars($_SESSION['access_level'] ?? 'Administrator')); ?></div>
-                        </div>
-                    </div>
-                    <a href="api/logout.php" class="logout-btn" onclick="return confirm('Are you sure you want to logout?')">
-                        <span>🚪</span>
-                        <span>Logout</span>
-                    </a>
-                </div>
-            </div>
-
-            <nav class="sidebar-nav">
-                <div class="nav-section">
-                    <div class="nav-section-title">Main</div>
-                    <a href="index.php" class="nav-item">
-                        <span class="nav-icon">🏠</span>
-                        <span>Dashboard</span>
-                    </a>
-                    <a href="voyage_management.php" class="nav-item active">
-                        <span class="nav-icon">⚙️</span>
-                        <span>Voyage Management</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Management</div>
-                    <a href="location_management.php" class="nav-item">
-                        <span class="nav-icon">📍</span>
-                        <span>Location Management</span>
-                    </a>
-                    <a href="unified_seizure.php" class="nav-item">
-                        <span class="nav-icon">⚠️</span>
-                        <span>Seizure Management</span>
-                    </a>
-                    <a href="settings.php" class="nav-item">
-                        <span class="nav-icon">⚙️</span>
-                        <span>Settings</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Permits & Certificates</div>
-                    <a href="import_permits.php" class="nav-item">
-                        <span class="nav-icon">📋</span>
-                        <span>Import Permits</span>
-                    </a>
-                    <a href="#" class="nav-item">
-                        <span class="nav-icon">📄</span>
-                        <span>Export Certificates</span>
-                    </a>
-                    <a href="#" class="nav-item">
-                        <span class="nav-icon">🏥</span>
-                        <span>Health Certificates</span>
-                    </a>
-                    <a href="#" class="nav-item">
-                        <span class="nav-icon">🧪</span>
-                        <span>Laboratory Reports</span>
-                    </a>
-                    <a href="#" class="nav-item">
-                        <span class="nav-icon">📜</span>
-                        <span>Quarantine Orders</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Resources</div>
-                    <a href="#" class="nav-item">
-                        <span class="nav-icon">📚</span>
-                        <span>Documentation</span>
-                    </a>
-                    <a href="#" class="nav-item">
-                        <span class="nav-icon">❓</span>
-                        <span>Help</span>
-                    </a>
-                </div>
-            </nav>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <div class="content-container">
+    }
+</style>
+<?php include 'includes/layout-start.php'; ?>
                 <div class="management-header">
-                    <h1>⚙️ Voyage Management</h1>
+                    <h1>🚢 Voyage Management</h1>
                     <p>Manage biosecurity voyages with full lifecycle support</p>
                 </div>
 
@@ -750,7 +414,7 @@ require_once 'api/auth_check.php';
                     <!-- Action Bar -->
                     <div class="action-bar">
                         <div class="search-filters">
-                            <input type="text" id="searchInput" class="search-input" placeholder="Search voyages...">
+                            <input type="text" id="searchInput" class="search-input" placeholder="Search voyage...">
                             <select id="statusFilter" class="filter-select">
                                 <option value="">All Status</option>
                                 <option value="draft">Draft</option>
@@ -782,9 +446,6 @@ require_once 'api/auth_check.php';
                         </div>
                     </div>
                 </div>
-            </div>
-        </main>
-    </div>
 
     <!-- Create/Edit Voyage Modal -->
     <div id="voyageModal" class="modal">
@@ -811,15 +472,13 @@ require_once 'api/auth_check.php';
                         <div class="form-group">
                             <label for="PortOfLoadingID">Port of Loading <span class="required">*</span></label>
                             <select id="PortOfLoadingID" name="PortOfLoadingID" required>
-                                    <option value="">Select a country...</option>
-                                    <!-- Options will be populated dynamically via JavaScript -->
-                                </select>
+                                <option value="">Select a country...</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="PortOfArrivalID">Port of Arrival <span class="required">*</span></label>
                             <select id="PortOfArrivalID" name="PortOfArrivalID" required>
                                 <option value="">Select a port...</option>
-                                <!-- Options will be populated dynamically via JavaScript -->
                             </select>
                         </div>
                     </div>
@@ -861,19 +520,13 @@ require_once 'api/auth_check.php';
             </div>
         </div>
     </div>
-
+<?php include 'includes/layout-end.php'; ?>
     <script>
         let voyages = [];
         let currentEditId = null;
 
         // Load voyages on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Load saved theme
-            const savedTheme = localStorage.getItem('selectedTheme') || 'purple';
-            if (savedTheme) {
-                document.body.classList.add('theme-' + savedTheme);
-            }
-
             loadVoyages();
             setupEventListeners();
         });
@@ -908,7 +561,7 @@ require_once 'api/auth_check.php';
                     <div class="empty-state">
                         <div class="empty-state-icon">🚢</div>
                         <h3>No Voyages Found</h3>
-                        <p>Get started by creating your first biosecurity voyage.</p>
+                        <p>Get started by creating your first voyage.</p>
                         <button class="btn btn-primary" onclick="openCreateModal()">
                             <span>➕</span>
                             <span>Create Voyage</span>
@@ -954,18 +607,9 @@ require_once 'api/auth_check.php';
                     <td>${createStepProgress(voyage)}</td>
                     <td>${formatDate(voyage.created_at)}</td>
                     <td class="actions-cell">
-                        <button class="btn btn-sm btn-primary" onclick="editVoyage(${voyage.VoyageID})" title="Edit Voyage">
-                            ✏️
-                        </button>
-                        <button class="btn btn-sm btn-secondary" onclick="viewVoyage(${voyage.VoyageID})" title="View Details">
-                            👁️
-                        </button>
-                        <a href="voyagement.php?voyage_id=${voyage.VoyageID}" class="btn btn-sm btn-secondary" title="Process Voyage">
-                            📝
-                        </a>
-                        <button class="btn btn-sm" style="background: #ef4444; color: white;" onclick="deleteVoyage(${voyage.VoyageID})" title="Delete Voyage">
-                            🗑️
-                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="editVoyage(${voyage.VoyageID})" title="Edit Voyage">✏️</button>
+                        <a href="voyagement.php?voyage_id=${voyage.VoyageID}" class="btn btn-sm btn-secondary" title="Process Voyage">📝</a>
+                        <button class="btn btn-sm" style="background: #ef4444; color: white;" onclick="deleteVoyage(${voyage.VoyageID})" title="Delete">🗑️</button>
                     </td>
                 </tr>
             `;
@@ -1023,7 +667,6 @@ require_once 'api/auth_check.php';
             document.getElementById('voyageForm').reset();
             document.getElementById('ModifiedDate').value = new Date().toISOString().split('T')[0];
 
-            // Load dropdowns after a short delay to ensure modal is open
             setTimeout(() => {
                 loadCountryDropdowns();
                 loadLocationDropdown();
@@ -1040,14 +683,12 @@ require_once 'api/auth_check.php';
             try {
                 let response;
                 if (currentEditId) {
-                    // Update existing voyage
                     response = await fetch(`api/voyage_details.php?id=${currentEditId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: new URLSearchParams(data)
                     });
                 } else {
-                    // Create new voyage
                     response = await fetch('api/voyage_crud.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1092,10 +733,6 @@ require_once 'api/auth_check.php';
             }
         }
 
-        function viewVoyage(id) {
-            window.open(`voyagement.php?voyage_id=${id}&mode=view`, '_blank');
-        }
-
         function formatDate(dateString) {
             return new Date(dateString).toLocaleDateString('en-SG', {
                 year: 'numeric',
@@ -1136,7 +773,6 @@ require_once 'api/auth_check.php';
             }, 3000);
         }
 
-        // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('voyageModal');
             if (event.target === modal) {
@@ -1144,7 +780,6 @@ require_once 'api/auth_check.php';
             }
         }
 
-        // Add slideOut animation
         const style = document.createElement('style');
         style.textContent = `
             @keyframes slideOut {
@@ -1154,7 +789,6 @@ require_once 'api/auth_check.php';
         `;
         document.head.appendChild(style);
 
-        // Location dropdown functionality
         async function loadLocationDropdown() {
             const locationSelect = document.getElementById('LocationID');
             if (!locationSelect) return;
@@ -1164,10 +798,7 @@ require_once 'api/auth_check.php';
                 const result = await response.json();
 
                 if (result.success && result.data) {
-                    // Clear existing options except the placeholder
                     locationSelect.innerHTML = `<option value="">Select a location...</option>`;
-
-                    // Group locations by region
                     const locationsByRegion = {};
                     result.data.forEach(location => {
                         if (!locationsByRegion[location.region]) {
@@ -1176,11 +807,9 @@ require_once 'api/auth_check.php';
                         locationsByRegion[location.region].push(location);
                     });
 
-                    // Add location options grouped by region
                     Object.keys(locationsByRegion).sort().forEach(region => {
                         const optgroup = document.createElement('optgroup');
                         optgroup.label = region;
-
                         locationsByRegion[region].sort((a, b) => a.location_name.localeCompare(b.location_name))
                             .forEach(location => {
                                 const option = document.createElement('option');
@@ -1188,43 +817,30 @@ require_once 'api/auth_check.php';
                                 option.textContent = location.location_name;
                                 optgroup.appendChild(option);
                             });
-
                         locationSelect.appendChild(optgroup);
                     });
-                } else {
-                    console.error('Error loading locations:', result.message || 'Unknown error');
-                    locationSelect.innerHTML = `<option value="">Error loading locations</option>`;
                 }
             } catch (error) {
                 console.error('Error loading locations:', error);
-                locationSelect.innerHTML = `<option value="">Error loading locations</option>`;
             }
         }
 
-        // Country dropdown functionality
         async function loadCountryDropdown(selectElement, placeholder) {
             try {
                 const response = await fetch('api/get_countries.php');
                 const result = await response.json();
 
                 if (result.success && result.data) {
-                    // Clear existing options except the placeholder
                     selectElement.innerHTML = `<option value="">${placeholder}</option>`;
-
-                    // Add country options
                     result.data.forEach(country => {
                         const option = document.createElement('option');
                         option.value = country.CountryID;
                         option.textContent = country.CountryName;
                         selectElement.appendChild(option);
                     });
-                } else {
-                    console.error('Error loading countries:', result.message || 'Unknown error');
-                    selectElement.innerHTML = `<option value="">Error loading countries</option>`;
                 }
             } catch (error) {
                 console.error('Error loading countries:', error);
-                selectElement.innerHTML = `<option value="">Error loading countries</option>`;
             }
         }
 
@@ -1233,12 +849,6 @@ require_once 'api/auth_check.php';
             if (portOfLoadingSelect && portOfLoadingSelect.tagName === 'SELECT') {
                 await loadCountryDropdown(portOfLoadingSelect, 'Select a country...');
             }
-            const lastPortSelect = document.getElementById('LastPortID');
-            if (lastPortSelect && lastPortSelect.tagName === 'SELECT') {
-                await loadCountryDropdown(lastPortSelect, 'Select a country...');
-            }
-
-            // Also load Port of Arrival dropdown using ports API
             const portOfArrivalSelect = document.getElementById('PortOfArrivalID');
             if (portOfArrivalSelect && portOfArrivalSelect.tagName === 'SELECT') {
                 await loadPortsDropdown(portOfArrivalSelect, 'Select a port...');
@@ -1251,10 +861,7 @@ require_once 'api/auth_check.php';
                 const result = await response.json();
 
                 if (result.success && result.data) {
-                    const currentValue = selectElement.value;
                     selectElement.innerHTML = `<option value="">${placeholder}</option>`;
-
-                    // Group ports by country
                     const portsByCountry = {};
                     result.data.forEach(port => {
                         const country = port.country || 'Unknown';
@@ -1264,11 +871,9 @@ require_once 'api/auth_check.php';
                         portsByCountry[country].push(port);
                     });
 
-                    // Add grouped options
                     Object.keys(portsByCountry).sort().forEach(country => {
                         const optgroup = document.createElement('optgroup');
                         optgroup.label = country;
-
                         portsByCountry[country].sort((a, b) => a.port_name.localeCompare(b.port_name))
                             .forEach(port => {
                                 const option = document.createElement('option');
@@ -1276,11 +881,8 @@ require_once 'api/auth_check.php';
                                 option.textContent = port.port_name;
                                 optgroup.appendChild(option);
                             });
-
                         selectElement.appendChild(optgroup);
                     });
-
-                    if (currentValue) selectElement.value = currentValue;
                 }
             } catch (error) {
                 console.error('Error loading ports:', error);
@@ -1296,10 +898,7 @@ require_once 'api/auth_check.php';
                 const result = await response.json();
 
                 if (result.success && result.data) {
-                    // Clear existing options except the placeholder
                     vesselSelect.innerHTML = `<option value="">Select Vessel</option>`;
-
-                    // Add vessel options
                     result.data.sort((a, b) => a.VesselName.localeCompare(b.VesselName))
                         .forEach(vessel => {
                             const option = document.createElement('option');
@@ -1307,13 +906,9 @@ require_once 'api/auth_check.php';
                             option.textContent = vessel.VesselName;
                             vesselSelect.appendChild(option);
                         });
-                } else {
-                    console.error('Error loading vessels:', result.message || 'Unknown error');
-                    vesselSelect.innerHTML = `<option value="">Error loading vessels</option>`;
                 }
             } catch (error) {
                 console.error('Error loading vessels:', error);
-                vesselSelect.innerHTML = `<option value="">Error loading vessels</option>`;
             }
         }
 
@@ -1324,7 +919,6 @@ require_once 'api/auth_check.php';
             currentEditId = id;
             document.getElementById('modalTitle').textContent = 'Edit Voyage';
 
-            // Populate form fields (only the fields that exist in the modal)
             document.getElementById('VoyageNo').value = voyage.VoyageNo || '';
             document.getElementById('VesselID').value = voyage.VesselID || '';
             document.getElementById('PortOfLoadingID').value = voyage.PortOfLoadingID || '';
@@ -1336,7 +930,6 @@ require_once 'api/auth_check.php';
             document.getElementById('ModifiedBy').value = voyage.ModifiedBy || '';
             document.getElementById('ModifiedDate').value = voyage.ModifiedDate || '';
 
-            // Load dropdowns after populating form
             setTimeout(() => {
                 loadCountryDropdowns();
                 loadLocationDropdown();
@@ -1346,5 +939,3 @@ require_once 'api/auth_check.php';
             document.getElementById('voyageModal').style.display = 'block';
         }
     </script>
-</body>
-</html>

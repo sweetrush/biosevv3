@@ -72,6 +72,8 @@ $currentPage = 'settings';
         cursor: pointer;
         transition: all 0.3s ease;
         display: flex; align-items: center; gap: 25px;
+        text-decoration: none;
+        color: inherit;
     }
 
     .user-mgmt-card:hover {
@@ -231,6 +233,30 @@ $currentPage = 'settings';
                                 </div>
                                 <a href="port_of_entry_management.php" class="table-mgmt-btn">
                                     Manage Ports
+                                    <span style="font-size: 1.3em;">&#x2192;</span>
+                                </a>
+                            </div>
+
+                            <div class="table-mgmt-card">
+                                <div class="table-mgmt-icon">&#x1F4CD;</div>
+                                <div class="table-mgmt-info">
+                                    <h3>Location Management</h3>
+                                    <p>Manage ports, airports, wharves, and border crossing points for biosecurity operations.</p>
+                                </div>
+                                <a href="location_management.php" class="table-mgmt-btn">
+                                    Manage Locations
+                                    <span style="font-size: 1.3em;">&#x2192;</span>
+                                </a>
+                            </div>
+
+                            <div class="table-mgmt-card">
+                                <div class="table-mgmt-icon">&#x1F4C4;</div>
+                                <div class="table-mgmt-info">
+                                    <h3>Permit Templates</h3>
+                                    <p>Manage import permit templates with pre-configured IRA references and commodity requirements.</p>
+                                </div>
+                                <a href="permit_templates.php" class="table-mgmt-btn">
+                                    Manage Templates
                                     <span style="font-size: 1.3em;">&#x2192;</span>
                                 </a>
                             </div>

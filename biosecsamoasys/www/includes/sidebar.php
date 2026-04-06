@@ -63,7 +63,11 @@
             </a>
         </div>
 
-        <?php if (isset($_SESSION['access_level']) && $_SESSION['access_level'] === 'admin'): ?>
+        <?php
+            $sidebarRole = $_SESSION['access_level'] ?? '';
+            $sidebarRoleLevels = ['viewer' => 0, 'officer' => 1, 'admin' => 2, 'authorising_officer' => 3];
+            if (isset($sidebarRoleLevels[$sidebarRole]) && $sidebarRoleLevels[$sidebarRole] >= 2):
+        ?>
         <div class="nav-section">
             <div class="nav-section-title">Administration</div>
             <a href="user_management.php" class="nav-item <?= $currentPage === 'user_management' ? 'active' : '' ?>">

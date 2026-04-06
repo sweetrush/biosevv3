@@ -344,10 +344,13 @@ $currentPage = 'location_management';
 <?php include 'includes/layout-start.php'; ?>
                 <header style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                     <div>
-                        <h1>📍 Location Management</h1>
+                        <h1>&#x1F4CD; Location Management</h1>
                         <p>Manage ports, airports, and border crossing points for Samoa biosecurity operations</p>
                     </div>
-                    <button type="button" class="btn-refresh" onclick="refreshLocations()" title="Refresh locations">🔄 Refresh</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-primary" onclick="openAddModal()">+ Add Location</button>
+                        <button type="button" class="btn-refresh" onclick="refreshLocations()" title="Refresh locations">&#x1F504; Refresh</button>
+                    </div>
                 </header>
 
                 <!-- Quick Stats -->
@@ -433,6 +436,78 @@ $currentPage = 'location_management';
 
                 <div id="noLocations" class="no-locations" style="display: none;">
                     <p>No locations found matching your search criteria.</p>
+                </div>
+
+                <!-- Add Location Modal -->
+                <div id="addLocationModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>&#x2795; Add New Location</h2>
+                            <button class="close-btn" onclick="closeAddModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addLocationForm">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="addLocationName">Location Name <span class="required">*</span></label>
+                                        <input type="text" id="addLocationName" name="location_name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="addLocationIdDisplay">Location ID</label>
+                                        <input type="text" id="addLocationIdDisplay" readonly placeholder="Auto-generated">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="addLocationRegion">Region <span class="required">*</span></label>
+                                        <select id="addLocationRegion" name="region" required>
+                                            <option value="">Select Region...</option>
+                                            <option value="Apia">Apia</option>
+                                            <option value="Tuamasaga">Tuamasaga</option>
+                                            <option value="Aana">Aana</option>
+                                            <option value="Atua">Atua</option>
+                                            <option value="Va'a-o-Fonoti">Va'a-o-Fonoti</option>
+                                            <option value="Fa'asaleleaga">Fa'asaleleaga</option>
+                                            <option value="Gaga'emauga">Gaga'emauga</option>
+                                            <option value="Gagaifomauga">Gagaifomauga</option>
+                                            <option value="Palauli">Palauli</option>
+                                            <option value="Satupa'itea">Satupa'itea</option>
+                                            <option value="Vaisigano">Vaisigano</option>
+                                            <option value="Upolu">Upolu</option>
+                                            <option value="Savaii">Savaii</option>
+                                            <option value="Inter-Island">Inter-Island</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="addLocationType">Location Type <span class="required">*</span></label>
+                                        <select id="addLocationType" name="location_type" required>
+                                            <option value="">Select Type...</option>
+                                            <option value="seaport">&#x1F6A2; Seaport</option>
+                                            <option value="wharf">&#x2693; Wharf</option>
+                                            <option value="terminal">&#x1F3ED; Terminal</option>
+                                            <option value="airport">&#x2708;&#xFE0F; Airport</option>
+                                            <option value="airstrip">&#x1F6E9;&#xFE0F; Airstrip</option>
+                                            <option value="port">&#x1F3D7;&#xFE0F; Port</option>
+                                            <option value="harbor">&#x2693; Harbor</option>
+                                            <option value="jetty">&#x1FAB5; Jetty</option>
+                                            <option value="warehouse">&#x1F4E6; Warehouse</option>
+                                            <option value="office">&#x1F3E2; Office</option>
+                                            <option value="land_border">&#x1F6C3; Land Border</option>
+                                            <option value="resort">&#x1F3E8; Resort</option>
+                                            <option value="naval">&#x2694;&#xFE0F; Naval</option>
+                                            <option value="emergency">&#x1F6A8; Emergency</option>
+                                            <option value="other">&#x1F4CD; Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+                            <button type="submit" form="addLocationForm" class="btn btn-primary">&#x1F4BE; Add Location</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Edit Location Modal -->
@@ -799,13 +874,45 @@ $currentPage = 'location_management';
         });
     });
 
+    function openAddModal() {
+        document.getElementById('addLocationForm').reset();
+        document.getElementById('addLocationIdDisplay').value = '';
+        document.getElementById('addLocationModal').style.display = 'flex';
+    }
+
+    function closeAddModal() {
+        document.getElementById('addLocationModal').style.display = 'none';
+        document.getElementById('addLocationForm').reset();
+    }
+
     document.getElementById('addLocationForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        const locationName = document.getElementById('locationName').value;
-        const region = document.getElementById('locationRegion').value;
-        const locationType = document.getElementById('locationType').value;
-        alert(`Add functionality would be implemented here. This would send a POST request to create a new location: ${locationName} (${locationType}) in ${region} region.`);
-        this.reset();
+        const data = {
+            location_name: document.getElementById('addLocationName').value,
+            region: document.getElementById('addLocationRegion').value,
+            location_type: document.getElementById('addLocationType').value,
+            is_active: true
+        };
+
+        fetch('api/create_location.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showNotification(result.message);
+                closeAddModal();
+                refreshLocationsData().then(() => loadStats());
+            } else {
+                alert('Error: ' + result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error creating location:', error);
+            alert('Error creating location. Please try again.');
+        });
     });
 
     let searchTimeout;
@@ -854,6 +961,10 @@ $currentPage = 'location_management';
             clearButton.style.display = 'none';
             searchInput.style.paddingRight = '105px';
         }
+    }
+
+    function showNotification(message, type) {
+        alert(message);
     }
 
     function clearSearch() {

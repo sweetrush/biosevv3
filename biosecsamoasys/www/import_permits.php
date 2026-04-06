@@ -496,8 +496,10 @@ require_once 'api/config.php';
                                     </div>
                                     <div class="form-row">
                                         <div class="form-group">
-                                            <label for="authorizedOfficer">Authorized Officer <span class="required">*</span></label>
-                                            <input type="text" id="authorizedOfficer" name="authorizedOfficer" required placeholder="Authorized officer name">
+                                            <label for="authorizedOfficer">Authorized Signing Officer <span class="required">*</span></label>
+                                            <select id="authorizedOfficer" name="authorizedOfficer" required>
+                                                <option value="">Select Authorized Officer</option>
+                                            </select>
                                         </div>
                                         <div class="form-group">
                                             <label for="endUse">End Use <span class="required">*</span></label>
@@ -552,33 +554,45 @@ require_once 'api/config.php';
                 </div>
 <?php include 'includes/layout-end.php'; ?>
     <script>
-        // Permit Templates Data
-        const permitTemplates = {
-            agricultural: {
-                importRequirements: "All agricultural products must be accompanied by phytosanitary certificates from country of origin. Products may be subject to inspection and treatment upon arrival."
-            },
-            animal: {
-                importRequirements: "All animal products must be accompanied by health certificates. Products may be subject to veterinary inspection and quarantine."
-            },
-            plant: {
-                importRequirements: "All plant materials must be free from pests and diseases. Products may be subject to inspection and treatment by biosecurity officers."
-            },
-            processed: {
-                importRequirements: "Processed foods must have valid food safety certificates. Products may be sampled for testing."
-            },
-            machinery: {
-                importRequirements: "Machinery must be clean and free from soil and organic matter. May require fumigation treatment."
-            }
-        };
-
         let permits = [];
+        let permitTemplates = {};
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             loadPermits();
             setupEventListeners();
             generatePermitNumber();
+            loadTemplates();
         });
+
+        async function loadTemplates() {
+            try {
+                const response = await fetch('api/get_permit_templates.php?in_use=1');
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const templateSelect = document.getElementById('template');
+                    templateSelect.innerHTML = '<option value="">Select Permit Template</option>';
+
+                    result.data.forEach(template => {
+                        permitTemplates[template.id] = {
+                            template_name: template.template_name,
+                            ira_reference: template.ira_reference,
+                            importRequirements: template.import_requirements,
+                            commodity_1: template.commodity_1,
+                            commodity_2: template.commodity_2
+                        };
+
+                        const option = document.createElement('option');
+                        option.value = template.id;
+                        option.textContent = template.template_name;
+                        templateSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
 
         function setupEventListeners() {
             document.getElementById('searchInput').addEventListener('input', filterPermits);
@@ -643,6 +657,27 @@ require_once 'api/config.php';
                 }
             } catch (error) {
                 console.error('Error loading officers:', error);
+            }
+        }
+
+        async function loadAuthorizedSigningOfficers() {
+            try {
+                const response = await fetch('api/get_authorised_officers.php');
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const select = document.getElementById('authorizedOfficer');
+                    select.innerHTML = '<option value="">Select Authorized Officer</option>';
+
+                    result.data.forEach(officer => {
+                        const option = document.createElement('option');
+                        option.value = officer.name;
+                        option.textContent = officer.name + (officer.department ? ` (${officer.department})` : '');
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading authorized officers:', error);
             }
         }
 
@@ -741,11 +776,20 @@ require_once 'api/config.php';
         function loadTemplateDetails() {
             const templateSelect = document.getElementById('template');
             const importRequirementsField = document.getElementById('importRequirements');
+            const commodityField = document.getElementById('commodity');
+            const iraRefField = document.getElementById('iraReference');
 
             if (templateSelect.value && permitTemplates[templateSelect.value]) {
-                importRequirementsField.value = permitTemplates[templateSelect.value].importRequirements;
+                const template = permitTemplates[templateSelect.value];
+                importRequirementsField.value = template.importRequirements || '';
+                iraRefField.value = template.ira_reference || '';
+
+                const commodities = [template.commodity_1, template.commodity_2].filter(Boolean).join('\n\n');
+                commodityField.value = commodities || '';
             } else {
                 importRequirementsField.value = '';
+                commodityField.value = '';
+                iraRefField.value = '';
             }
         }
 
@@ -763,6 +807,7 @@ require_once 'api/config.php';
 
             generatePermitNumber();
             loadOfficers();
+            loadAuthorizedSigningOfficers();
             document.getElementById('permitModal').style.display = 'block';
         }
 
@@ -830,6 +875,7 @@ require_once 'api/config.php';
 
             loadTemplateDetails();
             loadOfficers();
+            loadAuthorizedSigningOfficers();
 
             document.getElementById('permitModal').style.display = 'block';
         }

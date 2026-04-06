@@ -10,8 +10,10 @@ if (!isLoggedIn()) {
     exit;
 }
 
-// Check admin access
-if ($_SESSION['access_level'] !== 'admin') {
+// Check admin access (level 2+)
+$user_role = $_SESSION['access_level'] ?? '';
+$role_hierarchy = ['viewer' => 0, 'officer' => 1, 'admin' => 2, 'authorising_officer' => 3];
+if (!isset($role_hierarchy[$user_role]) || $role_hierarchy[$user_role] < 2) {
     echo json_encode(['success' => false, 'message' => 'Admin access required']);
     exit;
 }

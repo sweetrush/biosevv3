@@ -1,6 +1,7 @@
 <?php
 define('CSS_CACHE_BUST', 2);
 require_once 'api/auth_check.php';
+require_once 'api/config.php';
 
 if (!requireAuth('admin')) {
     header('Location: index.php');
@@ -70,6 +71,7 @@ $currentPage = 'user_management';
     .access-admin { background: #fef3c7; color: #92400e; }
     .access-officer { background: #dbeafe; color: #1e40af; }
     .access-viewer { background: #e5e7eb; color: #374151; }
+    .access-authorising_officer { background: #fae8ff; color: #86198f; }
 
     .user-avatar {
         width: 40px; height: 40px;
@@ -352,6 +354,7 @@ $currentPage = 'user_management';
                                         <option value="viewer">Viewer - Read-only access</option>
                                         <option value="officer">Officer - Standard user access</option>
                                         <option value="admin">Administrator - Full system access</option>
+                                        <option value="authorising_officer">Authorising Officer - Administrator with signing authority</option>
                                     </select>
                                     <div class="error-message" id="add_access_level_error"></div>
                                 </div>
@@ -426,6 +429,7 @@ $currentPage = 'user_management';
                                         <option value="viewer">Viewer - Read-only access</option>
                                         <option value="officer">Officer - Standard user access</option>
                                         <option value="admin">Administrator - Full system access</option>
+                                        <option value="authorising_officer">Authorising Officer - Administrator with signing authority</option>
                                     </select>
                                     <div class="error-message" id="edit_access_level_error"></div>
                                 </div>
@@ -497,6 +501,8 @@ $currentPage = 'user_management';
             return;
         }
 
+        const roleLabels = { 'viewer': 'Viewer', 'officer': 'Officer', 'admin': 'Admin', 'authorising_officer': 'Authorising Officer' };
+
         const rows = users.map(user => `
             <tr>
                 <td>
@@ -509,7 +515,7 @@ $currentPage = 'user_management';
                 <td>${escapeHtml(user.email || '')}</td>
                 <td>
                     <span class="access-badge access-${escapeHtml(user.access_level || '')}">
-                        ${escapeHtml((user.access_level || '').charAt(0).toUpperCase() + (user.access_level || '').slice(1))}
+                        ${escapeHtml(roleLabels[user.access_level] || (user.access_level || '').charAt(0).toUpperCase() + (user.access_level || '').slice(1))}
                     </span>
                 </td>
                 <td>${escapeHtml(user.department || 'N/A')}</td>

@@ -59,7 +59,7 @@ if (empty($password)) {
     $errors['password'] = 'Password must be at least 6 characters';
 }
 
-if (!in_array($accessLevel, ['admin', 'officer', 'viewer'])) {
+if (!in_array($accessLevel, ['admin', 'officer', 'viewer', 'authorising_officer'])) {
     $errors['access_level'] = 'Invalid access level';
 }
 

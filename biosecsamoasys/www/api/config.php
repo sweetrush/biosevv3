@@ -49,7 +49,7 @@ function requireAuth($required_role = null) {
 
     if ($required_role !== null) {
         $user_role = $_SESSION['access_level'] ?? '';
-        $role_hierarchy = ['viewer' => 0, 'officer' => 1, 'admin' => 2];
+        $role_hierarchy = ['viewer' => 0, 'officer' => 1, 'admin' => 2, 'authorising_officer' => 3];
 
         if (!isset($role_hierarchy[$user_role]) ||
             $role_hierarchy[$user_role] < $role_hierarchy[$required_role]) {

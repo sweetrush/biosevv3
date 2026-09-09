@@ -3,6 +3,11 @@ define('CSS_CACHE_BUST', 2);
 require_once 'api/auth_check.php';
 $pageTitle = 'Voyage Management - Biosecurity System';
 $currentPage = 'voyage_management';
+
+// Generate CSRF token if not exists
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 <style>
     .management-header {
@@ -522,6 +527,7 @@ $currentPage = 'voyage_management';
     </div>
 <?php include 'includes/layout-end.php'; ?>
     <script>
+        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token']; ?>';
         let voyages = [];
         let currentEditId = null;
 
@@ -683,6 +689,7 @@ $currentPage = 'voyage_management';
             try {
                 let response;
                 if (currentEditId) {
+                    data.csrf_token = CSRF_TOKEN;
                     response = await fetch(`api/voyage_details.php?id=${currentEditId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -716,7 +723,7 @@ $currentPage = 'voyage_management';
             }
 
             try {
-                const response = await fetch(`api/voyage_details.php?id=${id}`, {
+                const response = await fetch(`api/voyage_details.php?id=${id}&csrf_token=${CSRF_TOKEN}`, {
                     method: 'DELETE'
                 });
 

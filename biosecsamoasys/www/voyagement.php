@@ -372,6 +372,7 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
 
 <?php include 'includes/layout-end.php'; ?>
     <script>
+        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token']; ?>';
         // Tab hash fragment support - open correct tab on page load
         function activateTabFromHash() {
             const hash = window.location.hash.replace('#', '');

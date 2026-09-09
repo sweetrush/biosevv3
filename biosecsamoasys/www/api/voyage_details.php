@@ -1,15 +1,52 @@
 <?php
 header('Content-Type: application/json');
 
-// Database connection
-$host = 'mysql';
-$dbname = 'biosecurity_db';
-$username = 'biosec_user';
-$password = 'biosec_pass';
+// Start session for auth and CSRF validation
+session_start();
+
+// Include config for DB connection and auth helpers
+require_once __DIR__ . '/config.php';
+
+// Authenticate user - require at least viewer level for GET, officer for state changes
+if (!requireAuth()) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Authentication required']);
+    exit;
+}
+
+// For state-changing requests (PUT, DELETE), require officer role and CSRF token
+function validateStateChangeRequest() {
+    // Officers and above can modify voyages
+    if (!requireAuth('officer')) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Insufficient permissions']);
+        exit;
+    }
+
+    // Validate CSRF token
+    $csrfToken = null;
+    if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+        parse_str(file_get_contents('php://input'), $putData);
+        $csrfToken = $putData['csrf_token'] ?? null;
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        $csrfToken = $_GET['csrf_token'] ?? null;
+    }
+
+    if (!isset($_SESSION['csrf_token']) || $csrfToken === null) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'CSRF token missing']);
+        exit;
+    }
+
+    if (!hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+        exit;
+    }
+}
 
 try {
-    $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn = getDBConnection();
 
     $response = array('success' => false, 'message' => '', 'data' => null);
 
@@ -84,20 +121,38 @@ try {
             $response['message'] = 'Voyage ID is required';
         }
     } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT') {
-        // Update voyage details
+        // Update voyage details - require auth + CSRF validation
+        validateStateChangeRequest();
+
         parse_str(file_get_contents("php://input"), $_PUT);
 
-        if (isset($_GET['id'])) {
-            $voyageId = $_GET['id'];
+        if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+            $response['message'] = 'Valid Voyage ID is required';
+            echo json_encode($response);
+            exit;
+        }
+        $voyageId = (int)$_GET['id'];
 
-            // Get current values for audit trail
-            $sql = "SELECT * FROM voyage_details WHERE VoyageID = :VoyageID";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindParam(':VoyageID', $voyageId);
-            $stmt->execute();
-            $currentValues = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!isset($_PUT['VoyageNo'])) {
+            $response['message'] = 'VoyageNo is required';
+            echo json_encode($response);
+            exit;
+        }
 
-            $conn->beginTransaction();
+        // Get current values for audit trail
+        $sql = "SELECT * FROM voyage_details WHERE VoyageID = :VoyageID";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':VoyageID', $voyageId);
+        $stmt->execute();
+        $currentValues = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$currentValues) {
+            $response['message'] = 'Voyage not found';
+            echo json_encode($response);
+            exit;
+        }
+
+        $conn->beginTransaction();
 
             try {
                 // Update voyage details
@@ -163,8 +218,8 @@ try {
                 $stmt->bindParam(':ModifiedBy', $_PUT['ModifiedBy']);
                 $previousValuesJson = json_encode($currentValues);
                 $newValuesJson = json_encode($_PUT);
-                $stmt->bindParam(':PreviousValues', $previousValuesJson);
-                $stmt->bindParam(':NewValues', $newValuesJson);
+                $stmt->bindValue(':PreviousValues', $previousValuesJson);
+                $stmt->bindValue(':NewValues', $newValuesJson);
                 $stmt->execute();
 
                 $conn->commit();
@@ -174,54 +229,62 @@ try {
 
             } catch (Exception $e) {
                 $conn->rollBack();
-                throw $e;
+                error_log('Voyage update failed: ' . $e->getMessage());
+                $response['message'] = 'Failed to update voyage: ' . $e->getMessage();
             }
-        } else {
-            $response['message'] = 'Voyage ID is required';
-        }
     } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-        // Delete voyage
-        if (isset($_GET['id'])) {
-            $voyageId = $_GET['id'];
+        // Delete voyage - require auth + CSRF validation
+        validateStateChangeRequest();
 
-            // Get current values for audit trail
-            $sql = "SELECT * FROM voyage_details WHERE VoyageID = :VoyageID";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindParam(':VoyageID', $voyageId);
-            $stmt->execute();
-            $currentValues = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+            $response['message'] = 'Valid Voyage ID is required';
+            echo json_encode($response);
+            exit;
+        }
+        $voyageId = (int)$_GET['id'];
 
-            if ($currentValues) {
-                $conn->beginTransaction();
+        // Get current values for audit trail
+        $sql = "SELECT * FROM voyage_details WHERE VoyageID = :VoyageID";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':VoyageID', $voyageId);
+        $stmt->execute();
+        $currentValues = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                try {
-                    // Create audit trail entry
-                    $sql = "INSERT INTO voyage_audit_trail (VoyageID, action, action_details, performed_by, previous_values)
-                            VALUES (:VoyageID, 'DELETE', 'Voyage deleted', 'System', :PreviousValues)";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->bindParam(':VoyageID', $voyageId);
-                    $stmt->bindParam(':PreviousValues', json_encode($currentValues));
-                    $stmt->execute();
+        if ($currentValues) {
+            $conn->beginTransaction();
 
-                    // Delete voyage (cascade will handle related records)
-                    $sql = "DELETE FROM voyage_details WHERE VoyageID = :VoyageID";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->bindParam(':VoyageID', $voyageId);
-                    $stmt->execute();
+            try {
+                // Get current user for audit trail
+                $currentUser = getCurrentUser();
+                $performedBy = $currentUser['username'] ?? 'System';
 
-                    $conn->commit();
+                // Create audit trail entry
+                $sql = "INSERT INTO voyage_audit_trail (VoyageID, action, action_details, performed_by, previous_values)
+                        VALUES (:VoyageID, 'DELETE', 'Voyage deleted', :PerformedBy, :PreviousValues)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bindParam(':VoyageID', $voyageId);
+                $stmt->bindParam(':PerformedBy', $performedBy);
+                $previousValuesJson = json_encode($currentValues);
+                $stmt->bindValue(':PreviousValues', $previousValuesJson);
+                $stmt->execute();
 
-                    $response['success'] = true;
-                    $response['message'] = 'Voyage deleted successfully!';
-                } catch (Exception $e) {
-                    $conn->rollBack();
-                    throw $e;
-                }
-            } else {
-                $response['message'] = 'Voyage not found';
+                // Delete voyage (cascade will handle related records)
+                $sql = "DELETE FROM voyage_details WHERE VoyageID = :VoyageID";
+                $stmt = $conn->prepare($sql);
+                $stmt->bindParam(':VoyageID', $voyageId);
+                $stmt->execute();
+
+                $conn->commit();
+
+                $response['success'] = true;
+                $response['message'] = 'Voyage deleted successfully!';
+            } catch (Exception $e) {
+                $conn->rollBack();
+                error_log('Voyage deletion failed: ' . $e->getMessage());
+                $response['message'] = 'Failed to delete voyage: ' . $e->getMessage();
             }
         } else {
-            $response['message'] = 'Voyage ID is required';
+            $response['message'] = 'Voyage not found';
         }
     } else {
         $response['message'] = 'Invalid request method';

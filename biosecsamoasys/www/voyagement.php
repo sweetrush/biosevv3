@@ -1,6 +1,6 @@
 <?php
 require_once 'api/auth_check.php';
-define('CSS_CACHE_BUST', 2);
+define('CSS_CACHE_BUST', 3);
 $pageTitle = 'Voyagement - Samoa Biosecurity System';
 $currentPage = 'voyagement';
 
@@ -146,6 +146,29 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
     .tabs button.current-step {
         background: rgba(99, 102, 241, 0.15);
         border-bottom: 3px solid #6366f1;
+    }
+
+    .tabs button.locked {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tabs button.locked:hover {
+        transform: none;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tabs button.locked::before {
+        transform: translateY(-100%);
+    }
+
+    .step-lock-icon {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-size: 0.9em;
+        opacity: 0.7;
     }
 
     .tab-content {
@@ -296,6 +319,12 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
         }
     }
 </style>
+<?php
+// Pass voyage data to layout via global for app-wrapper attribute
+$GLOBALS['voyage_edit_id'] = $edit_voyage_id;
+$GLOBALS['voyage_edit_no'] = ($voyage_data && $voyage_data['VoyageNo']) ? $voyage_data['VoyageNo'] : null;
+$GLOBALS['voyage_edit_vessel'] = ($voyage_data && $voyage_data['VesselID']) ? $voyage_data['VesselID'] : null;
+?>
 <?php include 'includes/layout-start.php'; ?>
                 <div class="container">
                     <header>
@@ -310,6 +339,16 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
                             <?php endif; ?>
                         </p>
                     </header>
+
+                    <!-- Active Voyage Banner - visible across all steps -->
+                    <div id="voyageBanner" style="display: none; padding: 12px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 20px;">
+                        <span style="font-size: 1.5em;">🚢</span>
+                        <div style="flex: 1;">
+                            <strong>Active Voyage:</strong> <span id="bannerVoyageNo">N/A</span>
+                            <span style="margin-left: 15px; opacity: 0.9;">Vessel: <span id="bannerVesselID">N/A</span></span>
+                            <span style="margin-left: 15px; opacity: 0.9;">ID: <span id="bannerVoyageID">N/A</span></span>
+                        </div>
+                    </div>
 
                     <ul class="tabs" role="tablist">
                         <li>
@@ -394,6 +433,18 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
             // Handle URL hash for direct tab navigation
             activateTabFromHash();
 
+            // Apply default step gating for new voyage mode (lock all except Step 1)
+            if (!window.currentVoyageId) {
+                applyStepGating({
+                    current_step: 'voyage_details',
+                    voyage_details_complete: false,
+                    passenger_inspection_complete: false,
+                    passenger_seizure_complete: false,
+                    cargo_seizure_complete: false,
+                    cargo_release_complete: false
+                });
+            }
+
             // Load locations for dropdown
             loadLocationDropdown();
             // Load countries for dropdown
@@ -404,10 +455,37 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
             // Initialize edit mode if voyage_id is present
             const appWrapper = document.querySelector('.app-wrapper');
             const voyageId = appWrapper.getAttribute('data-voyage-id');
+            const voyageNo = appWrapper.getAttribute('data-voyage-no');
+            const voyageVessel = appWrapper.getAttribute('data-voyage-vessel');
             if (voyageId) {
+                // Populate localStorage so Steps 2-5 align to this voyage
+                localStorage.setItem('activeVoyageID', voyageId);
+                if (voyageNo) localStorage.setItem('activeVoyageNo', voyageNo);
+                if (voyageVessel) localStorage.setItem('activeVesselID', voyageVessel);
+
+                // Show banner with edit mode voyage data
+                updateVoyageBanner(voyageId, voyageNo, voyageVessel);
+
                 initializeEditMode(voyageId);
+            } else {
+                // New mode: check localStorage for existing active voyage
+                const lsVoyageId = localStorage.getItem('activeVoyageID');
+                if (lsVoyageId) {
+                    updateVoyageBanner(lsVoyageId, localStorage.getItem('activeVoyageNo'), localStorage.getItem('activeVesselID'));
+                }
             }
         });
+
+        // Update the voyage banner with active voyage info
+        function updateVoyageBanner(voyageId, voyageNo, vesselId) {
+            const banner = document.getElementById('voyageBanner');
+            if (!banner) return;
+
+            document.getElementById('bannerVoyageID').textContent = voyageId || 'N/A';
+            document.getElementById('bannerVoyageNo').textContent = voyageNo || 'N/A';
+            document.getElementById('bannerVesselID').textContent = vesselId || 'N/A';
+            banner.style.display = 'flex';
+        }
 
         // Load locations dropdown
         async function loadLocationDropdown() {
@@ -650,16 +728,37 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
 
                     updateStatusIndicators(status);
 
+                    // On edit mode, activate the current_step tab (unless URL hash specifies a valid tab)
                     if (status.current_step) {
                         const stepMap = {
                             'voyage_details': 'voyageTab',
                             'passenger_inspection': 'inspectionTab',
                             'passenger_seizure': 'seizureTab',
                             'cargo_seizure': 'cargoSeizureTab',
-                            'cargo_release': 'cargoReleaseTab'
+                            'cargo_release': 'cargoReleaseTab',
+                            'completed': 'cargoReleaseTab'
                         };
 
                         const targetTab = stepMap[status.current_step];
+                        const hashTab = window.location.hash.replace('#', '');
+
+                        // Use URL hash if it's valid and the tab is accessible (not locked)
+                        if (hashTab && STEP_ORDER.includes(hashTab)) {
+                            const hashIndex = STEP_ORDER.indexOf(hashTab);
+                            const currentStepIndex = STEP_ORDER.indexOf(targetTab || 'voyageTab');
+                            const hashComplete = status[STEP_COMPLETE_MAP[hashTab]];
+
+                            // Only use hash if it's at or before current step, or already complete
+                            if (hashIndex <= currentStepIndex || hashComplete) {
+                                const hashButton = document.querySelector(`.tab-link[onclick*="${hashTab}"]`);
+                                if (hashButton && !hashButton.classList.contains('locked')) {
+                                    hashButton.click();
+                                    return;
+                                }
+                            }
+                        }
+
+                        // Fall back to current_step tab
                         if (targetTab) {
                             const tabButton = document.querySelector(`.tab-link[onclick*="${targetTab}"]`);
                             if (tabButton) {
@@ -712,20 +811,13 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
                 return;
             }
 
-            const inspection = inspections[0];
-            Object.keys(inspection).forEach(key => {
-                const element = document.getElementById(key);
-                if (element && element.type !== 'hidden') {
-                    element.value = inspection[key] || '';
-                }
-                const select = document.getElementById(key);
-                if (select && select.tagName === 'SELECT' && inspection[key]) {
-                    select.value = inspection[key];
-                    select.dispatchEvent(new Event('change'));
-                }
-            });
+            // Populate the voyage-specific inspection list via loadVoyageInspections
+            const activeVoyageID = localStorage.getItem('activeVoyageID');
+            if (activeVoyageID && typeof loadVoyageInspections === 'function') {
+                loadVoyageInspections(activeVoyageID);
+            }
 
-            console.log('Loaded passenger inspection:', inspection);
+            console.log(`Loaded ${inspections.length} passenger inspection(s) for voyage`);
         }
 
         function populatePassengerSeizures(seizures) {
@@ -813,6 +905,9 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
         function updateStatusIndicators(status) {
             console.log('Updating status indicators:', status);
 
+            // Apply step gating
+            applyStepGating(status);
+
             const steps = [
                 { key: 'voyage_details_complete', tabId: 'voyageTab', tabSelector: '[onclick*="voyageTab"]' },
                 { key: 'passenger_inspection_complete', tabId: 'inspectionTab', tabSelector: '[onclick*="inspectionTab"]' },
@@ -848,6 +943,11 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
         }
 
         function openTab(evt, tabName) {
+            // Enforce step gating: only allow if previous steps are complete (or this is the current step)
+            if (evt && evt.currentTarget && evt.currentTarget.classList.contains('locked')) {
+                return; // Block locked tabs
+            }
+
             var tabContent = document.getElementsByClassName("tab-content");
             for (var i = 0; i < tabContent.length; i++) {
                 tabContent[i].classList.remove("active");
@@ -859,7 +959,9 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
             }
 
             document.getElementById(tabName).classList.add("active");
-            evt.currentTarget.classList.add("active");
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add("active");
+            }
 
             // Update URL hash
             updateTabHash(tabName);
@@ -883,6 +985,58 @@ if (isset($_GET['voyage_id']) && !empty($_GET['voyage_id'])) {
             if (tabName === 'cargoSeizureTab' && typeof loadCountryDropdownForCargoSeizure === 'function') {
                 setTimeout(loadCountryDropdownForCargoSeizure, 100);
             }
+        }
+
+        // Step order and completion tracking
+        const STEP_ORDER = ['voyageTab', 'inspectionTab', 'seizureTab', 'cargoSeizureTab', 'cargoReleaseTab'];
+        const STEP_COMPLETE_MAP = {
+            'voyageTab': 'voyage_details_complete',
+            'inspectionTab': 'passenger_inspection_complete',
+            'seizureTab': 'passenger_seizure_complete',
+            'cargoSeizureTab': 'cargo_seizure_complete',
+            'cargoReleaseTab': 'cargo_release_complete'
+        };
+
+        // Apply step gating: lock tabs that can't be accessed yet
+        function applyStepGating(status) {
+            if (!status) return;
+
+            let previousComplete = true;
+            let currentStepFound = false;
+
+            // Determine current step index from status.current_step
+            const tabForStep = {
+                'voyage_details': 'voyageTab',
+                'passenger_inspection': 'inspectionTab',
+                'passenger_seizure': 'seizureTab',
+                'cargo_seizure': 'cargoSeizureTab',
+                'cargo_release': 'cargoReleaseTab',
+                'completed': 'cargoReleaseTab'
+            };
+
+            const currentTab = tabForStep[status.current_step] || 'voyageTab';
+            const currentIndex = STEP_ORDER.indexOf(currentTab);
+
+            STEP_ORDER.forEach((tabId, index) => {
+                const tabButton = document.querySelector(`.tab-link[onclick*="${tabId}"]`);
+                if (!tabButton) return;
+
+                // Remove existing lock state
+                tabButton.classList.remove('locked');
+                const existingLock = tabButton.querySelector('.step-lock-icon');
+                if (existingLock) existingLock.remove();
+
+                // Lock if: it's after the current step AND not yet complete
+                const isComplete = status[STEP_COMPLETE_MAP[tabId]];
+                if (index > currentIndex && !isComplete) {
+                    tabButton.classList.add('locked');
+                    const lockIcon = document.createElement('span');
+                    lockIcon.className = 'step-lock-icon';
+                    lockIcon.innerHTML = '🔒';
+                    lockIcon.title = 'Complete previous steps first';
+                    tabButton.appendChild(lockIcon);
+                }
+            });
         }
     </script>
 

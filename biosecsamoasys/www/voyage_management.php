@@ -1,5 +1,5 @@
 <?php
-define('CSS_CACHE_BUST', 2);
+define('CSS_CACHE_BUST', 3);
 require_once 'api/auth_check.php';
 $pageTitle = 'Voyage Management - Biosecurity System';
 $currentPage = 'voyage_management';
@@ -11,84 +11,93 @@ if (empty($_SESSION['csrf_token'])) {
 ?>
 <style>
     .management-header {
-        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         color: white;
-        padding: 40px;
+        padding: 36px;
         text-align: center;
     }
 
     .management-header h1 {
-        font-size: 2.5em;
-        margin-bottom: 10px;
+        font-size: 1.75em;
+        margin-bottom: 8px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
     }
 
     .management-header p {
-        font-size: 1.1em;
-        opacity: 0.9;
+        font-size: 1em;
+        opacity: 0.85;
+        font-weight: 400;
     }
 
     .management-content {
-        padding: 40px;
+        padding: 28px;
     }
 
     .action-bar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 30px;
+        margin-bottom: 24px;
         flex-wrap: wrap;
-        gap: 20px;
+        gap: 16px;
     }
 
     .search-filters {
         display: flex;
-        gap: 15px;
+        gap: 12px;
         flex: 1;
         flex-wrap: wrap;
     }
 
     .search-input {
-        padding: 12px 16px;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        font-size: 1em;
-        min-width: 250px;
-        transition: all 0.3s ease;
+        padding: 10px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        font-size: 0.925em;
+        min-width: 220px;
+        transition: var(--transition);
+        font-family: inherit;
+        color: var(--text-primary);
+        background: white;
     }
 
     .search-input:focus {
         outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.12);
     }
 
     .filter-select {
-        padding: 12px 16px;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        font-size: 1em;
+        padding: 10px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        font-size: 0.925em;
         background: white;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: var(--transition);
+        color: var(--text-primary);
+        font-family: inherit;
     }
 
     .filter-select:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: var(--primary);
     }
 
     .btn {
-        padding: 12px 24px;
-        font-size: 1em;
+        padding: 10px 20px;
+        font-size: 0.925em;
         font-weight: 600;
         border: none;
-        border-radius: 8px;
+        border-radius: var(--radius);
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: var(--transition);
         text-decoration: none;
         display: inline-flex;
         align-items: center;
         gap: 8px;
+        font-family: inherit;
     }
 
     .btn:focus-visible {
@@ -97,118 +106,127 @@ if (empty($_SESSION['csrf_token'])) {
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--primary);
         color: white;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 1px 3px rgba(79, 109, 245, 0.3);
     }
 
     .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 109, 245, 0.3);
     }
 
     .btn-secondary {
-        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
-        color: #4a5568;
+        background: #f1f5f9;
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
     }
 
     .btn-secondary:hover {
-        background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+        background: #e2e8f0;
+        transform: translateY(-1px);
     }
 
     .btn-sm {
-        padding: 8px 16px;
-        font-size: 0.9em;
+        padding: 7px 14px;
+        font-size: 0.85em;
     }
 
     .voyages-table {
         width: 100%;
         border-collapse: collapse;
         background: white;
-        border-radius: 10px;
+        border-radius: var(--radius-lg);
         overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--card-shadow);
     }
 
     .voyages-table th {
-        background: linear-gradient(135deg, #f7fafc 0%, #e2e8f0 100%);
-        padding: 16px;
+        background: var(--bg-light);
+        padding: 14px 16px;
         text-align: left;
         font-weight: 600;
-        color: #2d3748;
-        border-bottom: 2px solid #e2e8f0;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.8em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .voyages-table td {
-        padding: 16px;
-        border-bottom: 1px solid #e2e8f0;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-color);
         vertical-align: middle;
+        font-size: 0.9em;
+        color: var(--text-primary);
     }
 
     .voyages-table tr:hover {
-        background: #f7fafc;
+        background: var(--bg-light);
     }
 
     .status-badge {
-        padding: 6px 12px;
+        padding: 4px 10px;
         border-radius: 20px;
-        font-size: 0.85em;
+        font-size: 0.78em;
         font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .status-draft {
-        background: #fef3c7;
+        background: var(--warning-light);
         color: #92400e;
     }
 
     .status-in_progress {
-        background: #dbeafe;
-        color: #1e40af;
+        background: var(--info-light);
+        color: #075985;
     }
 
     .status-completed {
-        background: #d1fae5;
+        background: var(--success-light);
         color: #065f46;
     }
 
     .status-archived {
-        background: #e5e7eb;
+        background: #e2e8f0;
         color: #374151;
     }
 
     .step-progress {
         display: flex;
-        gap: 8px;
+        gap: 6px;
         align-items: center;
     }
 
     .step-indicator {
-        width: 24px;
-        height: 24px;
+        width: 22px;
+        height: 22px;
         border-radius: 50%;
-        background: #e5e7eb;
+        background: #e2e8f0;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.8em;
+        font-size: 0.72em;
         font-weight: 600;
-        color: #6b7280;
+        color: var(--text-muted);
     }
 
     .step-indicator.complete {
-        background: #10b981;
+        background: var(--success);
         color: white;
     }
 
     .step-indicator.current {
-        background: #3b82f6;
+        background: var(--primary);
         color: white;
     }
 
     .actions-cell {
         display: flex;
-        gap: 8px;
+        gap: 6px;
         align-items: center;
     }
 
@@ -220,26 +238,28 @@ if (empty($_SESSION['csrf_token'])) {
         top: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        animation: fadeIn 0.3s ease;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.2s ease;
     }
 
     .modal-content {
         background: white;
         margin: 5% auto;
         padding: 0;
-        border-radius: 12px;
+        border-radius: var(--radius-lg);
         width: 90%;
         max-width: 600px;
         max-height: 80vh;
         overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         animation: slideIn 0.3s ease;
     }
 
     .modal-header {
-        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        background: var(--sidebar-bg);
         color: white;
-        padding: 20px 30px;
+        padding: 20px 28px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -247,14 +267,15 @@ if (empty($_SESSION['csrf_token'])) {
 
     .modal-header h2 {
         margin: 0;
-        font-size: 1.5em;
+        font-size: 1.25em;
+        font-weight: 700;
     }
 
     .close {
         background: none;
         border: none;
         color: white;
-        font-size: 1.5em;
+        font-size: 1.4em;
         cursor: pointer;
         padding: 0;
         width: 30px;
@@ -263,84 +284,89 @@ if (empty($_SESSION['csrf_token'])) {
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        transition: background 0.3s ease;
+        transition: var(--transition);
     }
 
     .close:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.15);
     }
 
     .modal-body {
-        padding: 30px;
+        padding: 28px;
         max-height: 60vh;
         overflow-y: auto;
     }
 
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 16px;
     }
 
     .form-group label {
         display: block;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         font-weight: 600;
-        color: #374151;
+        color: var(--text-primary);
+        font-size: 0.875em;
     }
 
     .form-group input,
     .form-group select,
     .form-group textarea {
         width: 100%;
-        padding: 12px 16px;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        font-size: 1em;
-        transition: all 0.3s ease;
+        padding: 10px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        font-size: 0.925em;
+        transition: var(--transition);
+        font-family: inherit;
+        color: var(--text-primary);
+        background: white;
     }
 
     .form-group input:focus,
     .form-group select:focus,
     .form-group textarea:focus {
         outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.12);
     }
 
     .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 20px;
+        gap: 16px;
     }
 
     .modal-footer {
-        padding: 20px 30px;
-        border-top: 1px solid #e2e8f0;
+        padding: 16px 28px;
+        border-top: 1px solid var(--border-color);
         display: flex;
         justify-content: flex-end;
-        gap: 12px;
+        gap: 10px;
     }
 
     .empty-state {
         text-align: center;
         padding: 60px 20px;
-        color: #6b7280;
+        color: var(--text-muted);
     }
 
     .empty-state-icon {
-        font-size: 4em;
-        margin-bottom: 20px;
-        opacity: 0.5;
+        font-size: 3em;
+        margin-bottom: 16px;
+        opacity: 0.4;
     }
 
     .empty-state h3 {
-        font-size: 1.5em;
-        margin-bottom: 10px;
-        color: #374151;
+        font-size: 1.25em;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-weight: 600;
     }
 
     .empty-state p {
-        font-size: 1.1em;
-        margin-bottom: 30px;
+        font-size: 0.95em;
+        margin-bottom: 24px;
     }
 
     .loading {
@@ -351,12 +377,12 @@ if (empty($_SESSION['csrf_token'])) {
     }
 
     .spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid #e5e7eb;
-        border-top: 5px solid #667eea;
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--border-color);
+        border-top: 3px solid var(--primary);
         border-radius: 50%;
-        animation: spin 1s linear infinite;
+        animation: spin 0.8s linear infinite;
     }
 
     @keyframes spin {
@@ -371,7 +397,7 @@ if (empty($_SESSION['csrf_token'])) {
 
     @keyframes slideIn {
         from {
-            transform: translateY(-50px);
+            transform: translateY(-30px);
             opacity: 0;
         }
         to {
@@ -395,12 +421,12 @@ if (empty($_SESSION['csrf_token'])) {
         }
 
         .voyages-table {
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
 
         .voyages-table th,
         .voyages-table td {
-            padding: 12px 8px;
+            padding: 10px 8px;
         }
 
         .actions-cell {
@@ -615,6 +641,7 @@ if (empty($_SESSION['csrf_token'])) {
                     <td class="actions-cell">
                         <button class="btn btn-sm btn-primary" onclick="editVoyage(${voyage.VoyageID})" title="Edit Voyage">✏️</button>
                         <a href="voyagement.php?voyage_id=${voyage.VoyageID}" class="btn btn-sm btn-secondary" title="Process Voyage">📝</a>
+                        <a href="export_report.php?voyage_id=${voyage.VoyageID}" class="btn btn-sm" style="background: #10b981; color: white;" title="Export Report" target="_blank">📄</a>
                         <button class="btn btn-sm" style="background: #ef4444; color: white;" onclick="deleteVoyage(${voyage.VoyageID})" title="Delete">🗑️</button>
                     </td>
                 </tr>

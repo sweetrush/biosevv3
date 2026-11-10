@@ -1,5 +1,5 @@
 <?php
-define('CSS_CACHE_BUST', 2);
+define('CSS_CACHE_BUST', 3);
 require_once 'api/auth_check.php';
 $pageTitle = 'Dashboard - Samoa Biosecure';
 $currentPage = 'index';

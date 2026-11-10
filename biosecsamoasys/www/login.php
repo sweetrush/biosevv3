@@ -1,5 +1,6 @@
 <?php
-define('CSS_CACHE_BUST', 2);
+define('CSS_CACHE_BUST', 3);
+define('APP_VERSION', '1.0.0');
 session_start();
 
 // Redirect to index if already logged in
@@ -61,7 +62,7 @@ unset($_SESSION['flash_message']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Samoa Biosecurity System - Secure Portal Access">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#1e293b">
     <title>Login - Samoa Biosecurity System</title>
     <link rel="stylesheet" href="styles.css?v=<?php echo CSS_CACHE_BUST; ?>">
     <style>
@@ -70,110 +71,144 @@ unset($_SESSION['flash_message']);
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 15px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            padding: 20px;
+            position: relative;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at top right, rgba(79, 109, 245, 0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at bottom left, rgba(5, 150, 105, 0.05) 0%, transparent 50%);
         }
 
         .login-box {
             background: white;
             padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
         }
 
         .login-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
         }
 
         .login-header .logo {
-            font-size: 3em;
-            margin-bottom: 10px;
+            font-size: 2.5em;
+            margin-bottom: 8px;
         }
 
         .login-header h1 {
-            color: #2d3748;
-            font-size: 1.8em;
-            margin-bottom: 5px;
+            color: var(--text-primary);
+            font-size: 1.5em;
+            margin-bottom: 4px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
         .login-header p {
-            color: #718096;
-            font-size: 0.95em;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            font-weight: 400;
         }
 
-        .form-group {
+        .login-form .form-group {
             margin-bottom: 20px;
         }
 
-        .form-group label {
+        .login-form .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 600;
-            color: #374151;
+            color: var(--text-primary);
+            font-size: 0.875em;
         }
 
-        .form-group input {
+        .login-form .form-group input {
             width: 100%;
             padding: 12px 16px;
-            border: 2px solid #e2e8f0;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            font-size: 1em;
-            transition: all 0.3s ease;
+            font-size: 0.95em;
+            transition: var(--transition);
             box-sizing: border-box;
+            font-family: inherit;
+            color: var(--text-primary);
         }
 
-        .form-group input:focus {
+        .login-form .form-group input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.12);
         }
 
         .error-message {
-            background: #fee2e2;
+            background: var(--error-light);
             color: #991b1b;
             padding: 12px 16px;
             border-radius: 8px;
             margin-bottom: 20px;
-            border-left: 4px solid #dc2626;
+            border-left: 4px solid var(--error);
+            font-size: 0.9em;
+            font-weight: 500;
         }
 
         .flash-message {
-            background: #d1fae5;
+            background: var(--success-light);
             color: #065f46;
             padding: 12px 16px;
             border-radius: 8px;
             margin-bottom: 20px;
-            border-left: 4px solid #10b981;
+            border-left: 4px solid var(--success);
+            font-size: 0.9em;
+            font-weight: 500;
         }
 
         .btn-login {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 12px;
+            background: var(--primary);
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 1.1em;
+            font-size: 1em;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
+            font-family: inherit;
         }
 
         .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(79, 109, 245, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
         }
 
         .login-footer {
-            margin-top: 30px;
+            margin-top: 28px;
             text-align: center;
             padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-            color: #718096;
-            font-size: 0.9em;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.8em;
+            line-height: 1.8;
+        }
+
+        .login-footer .version-info {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            opacity: 0.7;
         }
 
         @media (max-width: 480px) {
@@ -182,22 +217,22 @@ unset($_SESSION['flash_message']);
             }
 
             .login-header h1 {
-                font-size: 1.5em;
+                font-size: 1.3em;
             }
 
-            .form-group input {
+            .login-form .form-group input {
                 padding: 14px;
                 font-size: 16px;
             }
 
             .btn-login {
-                padding: 16px;
+                padding: 14px;
             }
         }
 
         @media (hover: none) and (pointer: coarse) {
             .btn-login,
-            .form-group input {
+            .login-form .form-group input {
                 min-height: 48px;
             }
         }
@@ -224,7 +259,7 @@ unset($_SESSION['flash_message']);
                 </div>
             <?php endif; ?>
 
-            <form method="POST" action="">
+            <form method="POST" action="" class="login-form">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" required
@@ -244,6 +279,7 @@ unset($_SESSION['flash_message']);
             <div class="login-footer">
                 <p>&copy; <?php echo date('Y'); ?> Samoa Biosecurity Authority</p>
                 <p>All activities are logged and monitored</p>
+                <p class="version-info">Version <?php echo APP_VERSION; ?></p>
             </div>
         </div>
     </div>

@@ -16,11 +16,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadCommodities();
     loadLocations();
-    loadRecentInspections();
 
-    // Check active voyage after voyages are loaded
+    // Check active voyage after voyages are loaded, then load voyage-specific inspections
     voyagesLoading.then(() => {
         checkActiveVoyage();
+        // Load inspections for the active voyage
+        const activeVoyageID = localStorage.getItem('activeVoyageID');
+        if (activeVoyageID) {
+            loadVoyageInspections(activeVoyageID);
+        } else {
+            loadRecentInspections();
+        }
     }).catch(error => {
         console.error('Error in voyage loading promise chain:', error);
     });
@@ -68,10 +74,15 @@ function checkActiveVoyage() {
                 });
             }
         }
+
+        // Load inspections for this voyage
+        loadVoyageInspections(activeVoyageID);
     } else {
         // Show voyage selection section
         document.getElementById('activeVoyageContext').style.display = 'none';
         document.getElementById('voyageSelectionSection').style.display = 'block';
+        // Show all recent inspections when no active voyage
+        loadRecentInspections();
     }
 }
 
@@ -245,51 +256,113 @@ function calculateCompliance() {
     }
 }
 
-// Load recent inspections
+// Load inspections for a specific voyage
+function loadVoyageInspections(voyageId) {
+    fetch(`api/get_recent_inspections.php?voyage_id=${voyageId}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('recentInspections');
+            const actionsDiv = document.getElementById('inspectionActions');
+            if (!container) return;
+
+            if (!data.success || !data.data || data.data.length === 0) {
+                container.innerHTML = '<p>No inspections recorded for this voyage yet. Fill in the form above to add one.</p>';
+                if (actionsDiv) actionsDiv.style.display = 'none';
+                return;
+            }
+
+            let html = `<p style="margin-bottom: 10px;"><strong>${data.count} inspection(s) for this voyage:</strong></p>`;
+            html += '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr style="background: #3498db; color: white;">';
+            html += '<th style="padding: 10px; text-align: left;">ID</th>';
+            html += '<th style="padding: 10px; text-align: left;">Commodity</th>';
+            html += '<th style="padding: 10px; text-align: left;">Group</th>';
+            html += '<th style="padding: 10px; text-align: left;">Location</th>';
+            html += '<th style="padding: 10px; text-align: left;">Consignments</th>';
+            html += '<th style="padding: 10px; text-align: left;">Non-Compliant</th>';
+            html += '<th style="padding: 10px; text-align: left;">Compliance</th>';
+            html += '<th style="padding: 10px; text-align: left;">Date</th>';
+            html += '</tr></thead><tbody>';
+
+            data.data.forEach((inspection, index) => {
+                const bgColor = index % 2 === 0 ? '#f8f9fa' : 'white';
+                const groupLabel = formatGroupName(inspection.CommodityGroupID);
+                const consignments = parseInt(inspection.NoOfConsignments) || 0;
+                const nonCompliant = parseInt(inspection.NoOfNonCompliant) || 0;
+                let complianceRate = 'N/A';
+                let complianceColor = '';
+                if (consignments > 0) {
+                    const rate = ((consignments - nonCompliant) / consignments * 100).toFixed(1);
+                    complianceRate = rate + '%';
+                    if (rate >= 95) complianceColor = '#d4edda';
+                    else if (rate >= 80) complianceColor = '#fff3cd';
+                    else complianceColor = '#f8d7da';
+                }
+
+                html += `<tr style="background: ${bgColor};">`;
+                html += `<td style="padding: 8px;">${inspection.PassengerInspectionID}</td>`;
+                html += `<td style="padding: 8px;">${inspection.CommodityType || 'N/A'}</td>`;
+                html += `<td style="padding: 8px;">${groupLabel || 'N/A'}</td>`;
+                html += `<td style="padding: 8px;">${inspection.location_name || 'N/A'}</td>`;
+                html += `<td style="padding: 8px;">${consignments}</td>`;
+                html += `<td style="padding: 8px;">${nonCompliant}</td>`;
+                html += `<td style="padding: 8px; background: ${complianceColor};">${complianceRate}</td>`;
+                html += `<td style="padding: 8px;">${inspection.ModifiedDate || inspection.created_at}</td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            // Show the post-submission action buttons
+            if (actionsDiv) actionsDiv.style.display = 'flex';
+        })
+        .catch(error => console.error('Error loading voyage inspections:', error));
+}
+
+// Load all recent inspections (fallback when no active voyage)
 function loadRecentInspections() {
     fetch('api/get_recent_inspections.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.data) {
-                const container = document.getElementById('recentInspections');
-                if (container) {
-                    if (data.data.length === 0) {
-                        container.innerHTML = '<p>No inspections recorded yet.</p>';
-                        return;
-                    }
+            const container = document.getElementById('recentInspections');
+            const actionsDiv = document.getElementById('inspectionActions');
+            if (!container) return;
 
-                    let html = '<table style="width: 100%; border-collapse: collapse;">';
-                    html += '<thead><tr style="background: #3498db; color: white;">';
-                    html += '<th style="padding: 10px; text-align: left;">ID</th>';
-                    html += '<th style="padding: 10px; text-align: left;">Voyage</th>';
-                    html += '<th style="padding: 10px; text-align: left;">Vessel</th>';
-                    html += '<th style="padding: 10px; text-align: left;">Commodity</th>';
-                    html += '<th style="padding: 10px; text-align: left;">Group</th>';
-                    html += '<th style="padding: 10px; text-align: left;">Consignments</th>';
-                    html += '<th style="padding: 10px; text-align: left;">Non-Compliant</th>';
-                    html += '<th style="padding: 10px; text-align: left;">Date</th>';
-                    html += '</tr></thead><tbody>';
-
-                    data.data.forEach((inspection, index) => {
-                        const bgColor = index % 2 === 0 ? '#f8f9fa' : 'white';
-                        const groupLabel = formatGroupName(inspection.CommodityGroupID);
-
-                        html += `<tr style="background: ${bgColor};">`;
-                        html += `<td style="padding: 8px;">${inspection.PassengerInspectionID}</td>`;
-                        html += `<td style="padding: 8px;">${inspection.VoyageNo || 'N/A'}</td>`;
-                        html += `<td style="padding: 8px;">${inspection.VesselID || 'N/A'}</td>`;
-                        html += `<td style="padding: 8px;">${inspection.CommodityType || 'N/A'}</td>`;
-                        html += `<td style="padding: 8px;">${groupLabel || 'N/A'}</td>`;
-                        html += `<td style="padding: 8px;">${inspection.NoOfConsignments || '0'}</td>`;
-                        html += `<td style="padding: 8px;">${inspection.NoOfNonCompliant || '0'}</td>`;
-                        html += `<td style="padding: 8px;">${inspection.ModifiedDate || inspection.created_at}</td>`;
-                        html += '</tr>';
-                    });
-
-                    html += '</tbody></table>';
-                    container.innerHTML = html;
-                }
+            if (!data.success || !data.data || data.data.length === 0) {
+                container.innerHTML = '<p>No inspections recorded yet.</p>';
+                if (actionsDiv) actionsDiv.style.display = 'none';
+                return;
             }
+
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr style="background: #3498db; color: white;">';
+            html += '<th style="padding: 10px; text-align: left;">ID</th>';
+            html += '<th style="padding: 10px; text-align: left;">Voyage</th>';
+            html += '<th style="padding: 10px; text-align: left;">Vessel</th>';
+            html += '<th style="padding: 10px; text-align: left;">Commodity</th>';
+            html += '<th style="padding: 10px; text-align: left;">Consignments</th>';
+            html += '<th style="padding: 10px; text-align: left;">Non-Compliant</th>';
+            html += '<th style="padding: 10px; text-align: left;">Date</th>';
+            html += '</tr></thead><tbody>';
+
+            data.data.forEach((inspection, index) => {
+                const bgColor = index % 2 === 0 ? '#f8f9fa' : 'white';
+                html += `<tr style="background: ${bgColor};">`;
+                html += `<td style="padding: 8px;">${inspection.PassengerInspectionID}</td>`;
+                html += `<td style="padding: 8px;">${inspection.VoyageNo || 'N/A'}</td>`;
+                html += `<td style="padding: 8px;">${inspection.VesselID || 'N/A'}</td>`;
+                html += `<td style="padding: 8px;">${inspection.CommodityType || 'N/A'}</td>`;
+                html += `<td style="padding: 8px;">${inspection.NoOfConsignments || '0'}</td>`;
+                html += `<td style="padding: 8px;">${inspection.NoOfNonCompliant || '0'}</td>`;
+                html += `<td style="padding: 8px;">${inspection.ModifiedDate || inspection.created_at}</td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            if (actionsDiv) actionsDiv.style.display = 'none';
         })
         .catch(error => console.error('Error loading recent inspections:', error));
 }
@@ -316,7 +389,9 @@ if (inspectionForm) {
 
                 // Refresh progress indicators
                 const vid = document.getElementById('InspectionVoyageID');
-                if (vid && typeof loadVoyageStatus === 'function') loadVoyageStatus(vid.value);
+                if (vid && typeof loadVoyageStatus === 'function') {
+                    loadVoyageStatus(vid.value);
+                }
 
                 // Reset form
                 inspectionForm.reset();
@@ -332,8 +407,11 @@ if (inspectionForm) {
                 document.getElementById('commodityInfo').style.display = 'none';
                 document.getElementById('complianceStatus').style.display = 'none';
 
-                // Reload recent inspections
-                loadRecentInspections();
+                // Reload the voyage-specific inspection list
+                const activeVoyageID = localStorage.getItem('activeVoyageID') || (vid ? vid.value : null);
+                if (activeVoyageID) {
+                    loadVoyageInspections(activeVoyageID);
+                }
 
                 // Scroll to message
                 messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -354,4 +432,28 @@ if (inspectionForm) {
             messageDiv.style.display = 'block';
         });
     });
+}
+
+// Add another inspection - reset form and scroll to top
+function addAnotherInspection() {
+    inspectionForm.reset();
+    document.getElementById('commodityInfo').style.display = 'none';
+    document.getElementById('complianceStatus').style.display = 'none';
+    document.getElementById('inspectionMessage').style.display = 'none';
+    document.getElementById('inspectionActions').style.display = 'none';
+
+    // Reset modified date to today
+    const modifiedDateField = document.getElementById('InspectionModifiedDate');
+    if (modifiedDateField) {
+        modifiedDateField.value = new Date().toISOString().split('T')[0];
+    }
+
+    // Scroll to the form
+    inspectionForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Continue to Step 3 (Passenger Seizure)
+function continueToSeizure() {
+    const nextBtn = document.querySelector('.tab-link[onclick*="seizureTab"]');
+    if (nextBtn) nextBtn.click();
 }

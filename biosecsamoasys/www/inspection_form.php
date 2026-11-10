@@ -41,6 +41,7 @@
     <!-- Commodity Information -->
     <div class="form-section">
         <h2>📦 Commodity Information</h2>
+        <p class="section-description">Add an inspection record for each commodity type inspected. Multiple inspections can be added per voyage.</p>
         <div class="form-row">
             <div class="form-group">
                 <label for="CommodityTypeID">Commodity Type <span class="required">*</span></label>
@@ -107,10 +108,20 @@
     </div>
 </form>
 
-<!-- Recent Inspections -->
+<!-- Inspections for this Voyage -->
 <div class="form-section">
-    <h2>📋 Recent Inspections</h2>
+    <h2>📋 Inspections for this Voyage</h2>
     <div id="recentInspections">
-        <p>Loading recent inspections...</p>
+        <p>Submit an inspection record to see it listed here, or load an existing voyage.</p>
     </div>
+</div>
+
+<!-- Post-submission action buttons (shown after first inspection is submitted) -->
+<div id="inspectionActions" style="display: none; gap: 15px; margin-top: 15px;">
+    <button type="button" class="btn btn-primary" onclick="addAnotherInspection()">
+        <span>➕</span> Add Another Inspection
+    </button>
+    <button type="button" class="btn btn-success" onclick="continueToSeizure()">
+        <span>➡️</span> Continue to Passenger Seizure (Step 3)
+    </button>
 </div>

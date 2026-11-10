@@ -288,7 +288,13 @@ if (cargoSeizureForm) {
                 messageDiv.style.display = 'block';
 
                 // Refresh progress indicators
-                if (typeof loadVoyageStatus === 'function') loadVoyageStatus(voyageID);
+                if (typeof loadVoyageStatus === 'function') {
+                    loadVoyageStatus(voyageID);
+                    setTimeout(() => {
+                        const nextBtn = document.querySelector('.tab-link[onclick*="cargoReleaseTab"]');
+                        if (nextBtn) nextBtn.click();
+                    }, 1500);
+                }
 
                 // Reset form
                 cargoSeizureForm.reset();

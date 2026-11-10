@@ -154,28 +154,7 @@ try {
         $response['voyage_id'] = $voyageID;
         $response['containers_inserted'] = $containerInserted;
 
-        // Create voyage_status record directly (Fix 2)
-        try {
-            $statusSql = "INSERT INTO voyage_status (VoyageID, status, current_step, voyage_details_complete)
-                          VALUES (:VoyageID, 'in_progress', 'voyage_details', 1)";
-            $statusStmt = $conn->prepare($statusSql);
-            $statusStmt->bindParam(':VoyageID', $voyageID, PDO::PARAM_INT);
-            $statusStmt->execute();
-
-            // Create audit trail entry
-            $auditSql = "INSERT INTO voyage_audit_trail (VoyageID, action, action_details, performed_by)
-                         VALUES (:VoyageID, 'complete_step', 'Completed step: voyage_details', :PerformedBy)";
-            $auditStmt = $conn->prepare($auditSql);
-            $auditStmt->bindParam(':VoyageID', $voyageID, PDO::PARAM_INT);
-            $performedByAudit = $_POST['ModifiedBy'] ?? 'System';
-            $auditStmt->bindParam(':PerformedBy', $performedByAudit, PDO::PARAM_STR);
-            $auditStmt->execute();
-        } catch (Exception $e) {
-            error_log('Failed to create voyage_status record: ' . $e->getMessage());
-            $response['warning'] = 'Voyage details saved but voyage status initialization failed.';
-        }
-
-        // Mark voyage_details step as complete via HTTP (Fix 3: use lighttpd service name)
+        // Mark voyage_details step as complete via voyage_status API
         try {
             $statusData = array(
                 'VoyageID' => $voyageID,
@@ -192,7 +171,7 @@ try {
                 )
             ));
 
-            // Call the voyage_status.php API to mark step complete
+            // Call the voyage_status.php API to mark step complete and advance current_step
             $statusResult = file_get_contents('http://lighttpd/api/voyage_status.php', false, $context);
             if ($statusResult === false) {
                 error_log('Failed to update voyage status for VoyageID: ' . $voyageID);

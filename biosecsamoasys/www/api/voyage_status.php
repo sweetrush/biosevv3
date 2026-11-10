@@ -64,6 +64,24 @@ try {
                         $updateFields[] = "$stepField = TRUE";
                         $actionDetails = "Completed step: $step";
 
+                        // Define step order
+                        $stepOrder = array(
+                            'voyage_details' => 0,
+                            'passenger_inspection' => 1,
+                            'passenger_seizure' => 2,
+                            'cargo_seizure' => 3,
+                            'cargo_release' => 4
+                        );
+                        $stepKeys = array_keys($stepOrder);
+
+                        // Advance current_step to the next step if not on the last one
+                        if (isset($stepOrder[$step]) && $stepOrder[$step] < 4) {
+                            $nextStep = $stepKeys[$stepOrder[$step] + 1];
+                            $updateFields[] = "current_step = :next_step";
+                            $params[':next_step'] = $nextStep;
+                            $actionDetails .= " - Advanced to: $nextStep";
+                        }
+
                         // Check if all steps are complete
                         $sql = "SELECT voyage_details_complete, passenger_inspection_complete,
                                        passenger_seizure_complete, cargo_seizure_complete, cargo_release_complete
@@ -83,6 +101,7 @@ try {
 
                         if ($allComplete) {
                             $updateFields[] = "status = 'completed'";
+                            $updateFields[] = "current_step = 'completed'";
                             $actionDetails .= " - Voyage marked as completed";
                         }
                     }

@@ -264,7 +264,13 @@ if (seizureForm) {
 
                 // Refresh progress indicators
                 const vid = document.getElementById('ps_SeizureVoyageID');
-                if (vid && typeof loadVoyageStatus === 'function') loadVoyageStatus(vid.value);
+                if (vid && typeof loadVoyageStatus === 'function') {
+                    loadVoyageStatus(vid.value);
+                    setTimeout(() => {
+                        const nextBtn = document.querySelector('.tab-link[onclick*="cargoSeizureTab"]');
+                        if (nextBtn) nextBtn.click();
+                    }, 1500);
+                }
 
                 // Reset form
                 seizureForm.reset();

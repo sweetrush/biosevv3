@@ -88,13 +88,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('activeVoyageNo', document.getElementById('VoyageNo').value);
                 localStorage.setItem('activeVesselID', document.getElementById('VesselID').value);
 
+                // Update the voyage banner so all steps show the active voyage
+                if (typeof updateVoyageBanner === 'function') {
+                    updateVoyageBanner(data.voyage_id, document.getElementById('VoyageNo').value, document.getElementById('VesselID').value);
+                }
+
                 // Refresh progress indicators
                 if (typeof loadVoyageStatus === 'function') loadVoyageStatus(data.voyage_id);
 
                 if (data.warning) {
                     showMessage(data.warning, 'warning');
                 } else {
-                    showMessage(`Voyage details submitted successfully!${cargoMsg} (Voyage ID: ${data.voyage_id}). Switch to Passenger Inspection tab to add inspections.`, 'success');
+                    showMessage(`Voyage details submitted successfully!${cargoMsg} (Voyage ID: ${data.voyage_id}). Moving to Passenger Inspection...`, 'success');
+
+                    // Auto-transition to next step (Passenger Inspection)
+                    setTimeout(() => {
+                        const nextBtn = document.querySelector('.tab-link[onclick*="inspectionTab"]');
+                        if (nextBtn) nextBtn.click();
+                    }, 1500);
                 }
 
                 // Reset form after successful submission
